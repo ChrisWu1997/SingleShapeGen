@@ -3,7 +3,7 @@ import h5py
 import time
 from utils import ensure_dir
 from dataset import generate_3Ddata_multiscale
-from common import get_config
+from config import get_config
 from model import get_agent
 import torch
 

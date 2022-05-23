@@ -58,7 +58,7 @@ class GrowingGeneratorTriplane(nn.Module):
 
     def init_next_scale(self):
         out_c_list = [self.n_channels] * (self.n_layers - 1) + [self.feat_dim]
-        ker_size, stride, pad = 3, 1, 0 # hard-coded
+        ker_size, stride, pad = 3, 1, 1 # hard-coded
         model = TriplaneConvs(self.feat_dim, out_c_list, ker_size, stride, pad, self.use_norm)
         self.body.append(model)
     
@@ -111,9 +111,9 @@ class GrowingGeneratorTriplane(nn.Module):
 
         # extract triplane features at head
         in_shape = ni.shape[-3:]
-        yz_feat = F.adaptive_avg_pool3d(ni, (self.avg_dim, in_shape[1], in_shape[2])).squeeze(1)
-        xz_feat = F.adaptive_avg_pool3d(ni, (in_shape[0], self.avg_dim, in_shape[2])).squeeze(1).permute(0, 2, 1, 3)
-        xy_feat = F.adaptive_avg_pool3d(ni, (in_shape[0], in_shape[1], self.avg_dim)).squeeze(1).permute(0, 3, 1, 2)
+        yz_feat = F.adaptive_avg_pool3d(ni, (self.pool_dim, in_shape[1], in_shape[2])).squeeze(1)
+        xz_feat = F.adaptive_avg_pool3d(ni, (in_shape[0], self.pool_dim, in_shape[2])).squeeze(1).permute(0, 2, 1, 3)
+        xy_feat = F.adaptive_avg_pool3d(ni, (in_shape[0], in_shape[1], self.pool_dim)).squeeze(1).permute(0, 3, 1, 2)
         yz_feat, xz_feat, xy_feat = self.head_conv([yz_feat, xz_feat, xy_feat])
         return [yz_feat, xz_feat, xy_feat]
 
@@ -136,10 +136,10 @@ class GrowingGeneratorTriplane(nn.Module):
             xz_feat = xz_feat + tri_noises[1]
             xy_feat = xy_feat + tri_noises[2]
 
-        if self.pad_head:
-            yz_feat = self.pad_block(yz_feat)
-            xz_feat = self.pad_block(xz_feat)
-            xy_feat = self.pad_block(xy_feat)
+        # if self.pad_head:
+        #     yz_feat = self.pad_block(yz_feat)
+        #     xz_feat = self.pad_block(xz_feat)
+        #     xy_feat = self.pad_block(xy_feat)
 
         yz_feat, xz_feat, xy_feat = self.body[i]([yz_feat, xz_feat, xy_feat])
         # skip connect
@@ -170,6 +170,7 @@ class GrowingGeneratorTriplane(nn.Module):
         return out
 
     def forward(self, init_noise, init_inp, real_shapes, noises_list, mode, coords=None, return_each=False, return_feat=False):
+        # FIXME: remove init_inp, as it's always 0
         tri_feats = self.forward_head(init_noise, init_inp)
 
         out_list = []

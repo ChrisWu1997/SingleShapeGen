@@ -28,7 +28,7 @@ class SSGmodel(object):
 
         self.device = torch.device('cuda:0')
 
-    def set_optimizer(self, config):
+    def _set_optimizer(self, config):
         """set optimizer used in training"""
         self.optimizerD = optim.Adam(self.netD.parameters(), lr=config.lr_d, betas=(config.beta1, 0.999))
     
@@ -44,7 +44,7 @@ class SSGmodel(object):
         # print([x['lr'] for x in parameter_list])
         self.optimizerG = optim.Adam(parameter_list, lr=config.lr_g, betas=(config.beta1, 0.999))
     
-    def set_tbwriter(self):
+    def _set_tbwriter(self):
         path = os.path.join(self.log_dir, 'train_s{}.events'.format(self.scale))
         self.train_tb = SummaryWriter(path)
 
@@ -90,7 +90,7 @@ class SSGmodel(object):
         self.netG.cuda()
         self.netD.cuda()
 
-        self.set_optimizer(self.config)
+        self._set_optimizer(self.config)
         self.optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])
         self.optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
         self.clock.restore_checkpoint(checkpoint['clock'])
@@ -153,7 +153,7 @@ class SSGmodel(object):
         loss_values = {'D': loss.data.item(), 'D_r': loss_r.data.item(), 'D_f': loss_f.data.item()}
         if self.config.lambda_grad:
             loss_values.update({'D_gp': gradient_penalty.data.item()})
-        self.update_loss_dict(loss_values)
+        self._update_loss_dict(loss_values)
 
     def _generator_iteration(self, real_data):
         # require grads
@@ -184,9 +184,9 @@ class SSGmodel(object):
         loss_values = {'G': loss.data.item(), 'G_adv': loss_adv.data.item()}
         if self.config.alpha:
             loss_values.update({'G_rec': loss_recon.data.item()})
-        self.update_loss_dict(loss_values)
+        self._update_loss_dict(loss_values)
     
-    def update_loss_dict(self, loss_dict: dict=None):
+    def _update_loss_dict(self, loss_dict: dict=None):
         if loss_dict is None:
             self.losses = {}
         else:
@@ -196,84 +196,15 @@ class SSGmodel(object):
                 else:
                     self.losses[k] = [v]
 
-    def record_losses(self):
+    def _record_losses(self):
         avg_loss = {k: np.mean(v) for k, v in self.losses.items()}
         self.train_tb.add_scalars("loss", avg_loss, global_step=self.clock.step)
         Wasserstein_D = np.mean([-self.losses['D_r'][i] - self.losses['D_f'][i] for i in range(len(self.losses['D_r']))])
         self.train_tb.add_scalar("wasserstein distance", Wasserstein_D, global_step=self.clock.step)
         return avg_loss
     
-    def set_real_data(self, real_data_list):
-        print("real data resolutions: ", [x.shape for x in real_data_list])
-        self.template = torch.zeros_like(real_data_list[0])
-        self.real_list = real_data_list
-        self.real_sizes = [x.shape[-3:] for x in self.real_list]
-
-    def _compute_noise_sigma(self, scale):
-        s = scale
-        if self.config.alpha > 0:
-            if s > 0:
-                # prev_rec = self.netG(self.noiseOpt_init, self.template, self.real_sizes[:s], self.noiseAmp_list[:s], 'rec')
-                prev_rec = self.generate('rec', s - 1)
-                prev_rec = F.interpolate(prev_rec, size=self.real_list[s].shape[2:], mode='trilinear', align_corners=False)
-                noise_amp = self.config.init_noise_amp * torch.sqrt(F.mse_loss(self.real_list[s], prev_rec))
-            else:
-                noise_amp = 1.0
-        else:
-            noise_amp = 0.1 if s > 0 else self.config.init_noise_amp
-        return noise_amp
-
-    def train(self, real_data_list):
-        self.set_real_data(real_data_list)
-        self.n_scales = len(self.real_list)
-        
-        for s in range(self.scale, self.n_scales):
-            # init networks and optimizers for each scale
-            # self.netD is reused directly
-            self.netG.init_next_scale()
-            self.netG.cuda()
-            assert self.netG.n_scales == s + 1
-
-            self.set_optimizer(self.config)
-            self.set_tbwriter()
-            self.clock.reset()
-            
-            # draw fixed noise for reconstruction
-            if self.noiseOpt_init is None:
-                torch.manual_seed(1234)
-                self.noiseOpt_init = torch.randn_like(self.template)
-
-            # draw gaussian noise std
-            noise_amp = self._compute_noise_sigma(s)
-            self.noiseAmp_list.append(noise_amp)
-
-            # train for current scale
-            self.train_single_scale(self.real_list[s])
-
-            self.scale += 1
-
-    def train_single_scale(self, real_data):
-        print("scale: {}, real shape: {}, noise amp: {}".format(self.scale, real_data.shape, self.noiseAmp_list[-1]))
-        pbar = tqdm(range(self.config.n_iters))
-        self.prev_opt_feats = None # buffer of prev scale features for reconstruction
-        for i in pbar:
-            losses = self.updateStep(real_data)
-            pbar.set_description("EPOCH[{}][{}]".format(i, self.config.n_iters))
-            pbar.set_postfix(OrderedDict({k: v.item() for k, v in losses.items()}))
-
-            if self.config.vis_frequency is not None and self.clock.step % self.config.vis_frequency == 0:
-                self.visualize_batch(real_data)
-
-            self.clock.tick()
-
-            if self.clock.step % self.config.save_frequency == 0:
-                self.save_ckpt()
-        
-        self.prev_opt_feats = None
-        self.save_ckpt('latest')
-
-    def updateStep(self, real_data):
-        self.update_loss_dict(None)
+    def _updateStep(self, real_data):
+        self._update_loss_dict(None)
         self.netD.train()
         self.netG.train()
 
@@ -289,10 +220,79 @@ class SSGmodel(object):
         for j in range(self.config.Gsteps):
             self._generator_iteration(real_data)
 
-        avg_loss = self.record_losses()
+        avg_loss = self._record_losses()
         if self.config.alpha > 0:
             return {'D': avg_loss['D'], 'G_adv': avg_loss['G_adv'], 'G_rec': avg_loss['G_rec']}
         return {'D': avg_loss['D'], 'G_adv': avg_loss['G_adv']}
+
+    def _train_single_scale(self, real_data):
+        print("scale: {}, real shape: {}, noise amp: {}".format(self.scale, real_data.shape, self.noiseAmp_list[-1]))
+        pbar = tqdm(range(self.config.n_iters))
+        self.prev_opt_feats = None # buffer of prev scale features for reconstruction
+        for i in pbar:
+            losses = self._updateStep(real_data)
+            pbar.set_description("EPOCH[{}][{}]".format(i, self.config.n_iters))
+            pbar.set_postfix(OrderedDict({k: v.item() for k, v in losses.items()}))
+
+            if self.config.vis_frequency is not None and self.clock.step % self.config.vis_frequency == 0:
+                self._visualize_in_training(real_data)
+
+            self.clock.tick()
+
+            if self.clock.step % self.config.save_frequency == 0:
+                self.save_ckpt()
+        
+        self.prev_opt_feats = None
+        self.save_ckpt('latest')
+
+    def train(self, real_data_list):
+        self._set_real_data(real_data_list)
+        self.n_scales = len(self.real_list)
+        
+        for s in range(self.scale, self.n_scales):
+            # init networks and optimizers for each scale
+            # self.netD is reused directly
+            self.netG.init_next_scale()
+            self.netG.cuda()
+            assert self.netG.n_scales == s + 1
+
+            self._set_optimizer(self.config)
+            self._set_tbwriter()
+            self.clock.reset()
+            
+            # draw fixed noise for reconstruction
+            if self.noiseOpt_init is None:
+                torch.manual_seed(1234)
+                self.noiseOpt_init = torch.randn_like(self.template)
+
+            # draw gaussian noise std
+            noise_amp = self._compute_noise_sigma(s)
+            self.noiseAmp_list.append(noise_amp)
+
+            # train for current scale
+            self._train_single_scale(self.real_list[s])
+
+            self.scale += 1
+
+    def _set_real_data(self, real_data_list):
+        print("real data resolutions: ", [x.shape for x in real_data_list])
+        self.real_list = [torch.tensor(x, dtype=torch.float32).unsqueeze(0).unsqueeze(0).cuda() for x in real_data_list]
+        self.template = torch.zeros_like(self.real_list[0])
+        self.real_sizes = [x.shape[-3:] for x in self.real_list]
+
+    def _compute_noise_sigma(self, scale):
+        s = scale
+        if self.config.alpha > 0:
+            if s > 0:
+                # prev_rec = self.netG(self.noiseOpt_init, self.template, self.real_sizes[:s], self.noiseAmp_list[:s], 'rec')
+                prev_rec = self.generate('rec', s - 1)
+                prev_rec = F.interpolate(prev_rec, size=self.real_list[s].shape[2:], mode='trilinear', align_corners=False)
+                noise_amp = self.config.base_noise_amp * torch.sqrt(F.mse_loss(self.real_list[s], prev_rec))
+            else:
+                noise_amp = 1.0
+        else:
+            noise_amp = self.config.base_noise_amp if s > 0 else 1.0
+        return noise_amp
 
     def draw_init_noise(self, mode, resize_factor=(1.0, 1.0, 1.0)):
         if mode == 'rec':
@@ -338,7 +338,7 @@ class SSGmodel(object):
         out = self.netG(init_noise, init_inp, real_sizes, noises_list, mode, return_each=return_each)
         return out
 
-    def visualize_batch(self, real_data):
+    def _visualize_in_training(self, real_data):
         if self.clock.step == 0:
             real_data_ = real_data.detach().cpu().numpy()[0, 0]
             self.train_tb.add_figure('real', draw_mat_figure_along_xyz(real_data_), self.clock.step)
