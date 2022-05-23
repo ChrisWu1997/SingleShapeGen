@@ -41,10 +41,6 @@ class Config(object):
         if args.gpu_ids is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
 
-        # create soft link to experiment log directory
-        # if not os.path.exists('train_log'):
-        #     os.symlink(self.exp_dir, 'train_log')
-
         # save this configuration
         if self.is_train:
             with open(os.path.join(self.exp_dir, 'config.json'), 'w') as f:
@@ -98,16 +94,19 @@ class Config(object):
     def _add_network_config_(self, parser):
         """add hyperparameters for network architecture"""
         group = parser.add_argument_group('network')
-        # group.add_argument("--z_dim", type=int, default=128)
-        group.add_argument("--feat_dim", type=int, default=32)
-        group.add_argument('--nfc', type=int, default=32)
-        group.add_argument('--min_nfc', type=int, default=32)
-        group.add_argument('--ker_size',type=int,help='kernel size',default=3)
-        group.add_argument('--num_layer',type=int,help='number of layers',default=5)
-        group.add_argument('--padd_size',type=int,help='net pad size',default=0)
-        # group.add_argument('--resnet', action='store_true', help="use resnet generator")
-        group.add_argument('--use_norm', type=int, default=1, help="use BN")
-        group.add_argument('--use_temp', action='store_true', help="using template")
+        group.add_argument("--D_nc", type=int, default=32, help="number of conv channels for discriminator")
+        group.add_argument("--D_layers", type=int, default=3, help="number of conv layers for discriminator")
+        group.add_argument("--G_nc", type=int, default=32, help="number of conv channels for generator")
+        group.add_argument("--G_layers", type=int, default=4, help="number of conv layers for generator")
+        group.add_argument("--mlp_dim", type=int, default=32, help="number of hidden features for MLP")
+        group.add_argument("--mlp_layers", type=int, default=0, help="number of hidden layers for MLP")
+        group.add_argument("--pool_dim", type=int, default=32, help="average pooling dimension")
+        group.add_argument("--feat_dim", type=int, default=32, help="tri-plane feature dimension")
+
+        # group.add_argument('--use_norm', type=int, default=1, help="use BN")
+        # group.add_argument('--use_norm', action='store_true', help='enable normalization layer')
+        group.add_argument('--no_norm', dest='use_norm', action='store_false', help='disable normalization layer')
+        group.set_defaults(use_norm=True) # FIXME: simpler option for python > 3.9
 
     def _add_training_config_(self, parser):
         """training configuration"""

@@ -4,7 +4,7 @@ import time
 from utils import ensure_dir
 from dataset import generate_3Ddata_multiscale
 from common import get_config
-from agent import get_agent
+from model import get_agent
 import torch
 
 

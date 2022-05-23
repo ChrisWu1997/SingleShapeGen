@@ -11,11 +11,7 @@ from networks import get_network
 from helpers import draw_mat_figure_along_xyz
 
 
-def get_agent(config):
-    return SinGANAgent(config)
-
-
-class SinGANAgent(object):
+class SSGmodel(object):
     def __init__(self, config):
         self.log_dir = config.log_dir
         self.model_dir = config.model_dir
@@ -28,7 +24,8 @@ class SinGANAgent(object):
         self.netG = get_network(config, 'G').cuda()
         # self.noiseOpt_list = []
         self.noiseOpt_init = None # assume rec use all zero noise for scale > 0
-        self.noiseAmp_list = []
+        self.noiseAmp_list = [] # gaussian noise std for each
+        self.real_shapes = []
 
         self.device = torch.device('cuda:0')
 
