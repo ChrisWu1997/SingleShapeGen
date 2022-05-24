@@ -30,18 +30,20 @@ class Config(object):
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
 
         # experiment paths
-        self.exp_dir = os.path.join(self.proj_dir, self.exp_name)
+        self.exp_dir = os.path.join(self.proj_dir, self.tag)
         self.log_dir = os.path.join(self.exp_dir, 'log')
         self.model_dir = os.path.join(self.exp_dir, 'model')
 
         # load saved config if not training
         if not self.is_train:
+            assert os.path.exists(self.exp_dir)
             config_path = os.path.join(self.exp_dir, 'config.json')
             print(f"Load saved config from {config_path}")
             with open(config_path, 'r') as f:
                 saved_args = json.load(f)
             for k, v in saved_args.items():
-                self.__setattr__(k, v)
+                if not hasattr(self, k):
+                    self.__setattr__(k, v)
             return
 
         # re-mkdir if re-training
@@ -84,13 +86,13 @@ class Config(object):
         """add general hyperparameters"""
         group = parser.add_argument_group('basic')
         group.add_argument('--proj_dir', type=str, default="project_log", help="a folder where models and logs will be saved")
-        group.add_argument('--exp_name', type=str, required=True, help="name of this experiment")
+        group.add_argument('--tag', type=str, required=True, help="name of this experiment")
         group.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
 
     def _add_dataset_config_(self, parser):
         """add hyperparameters for dataset configuration"""
         group = parser.add_argument_group('data')
-        group.add_argument('--path', type=str, help='source data path', default=None)
+        group.add_argument('-s', '--src_path', type=str, help='source data path', default=None)
 
     def _add_network_config_(self, parser):
         """add hyperparameters for network architecture"""
@@ -101,7 +103,7 @@ class Config(object):
         group.add_argument("--G_layers", type=int, default=4, help="number of conv layers for generator")
         group.add_argument("--mlp_dim", type=int, default=32, help="number of hidden features for MLP")
         group.add_argument("--mlp_layers", type=int, default=0, help="number of hidden layers for MLP")
-        group.add_argument("--pool_dim", type=int, default=32, help="average pooling dimension")
+        group.add_argument("--pool_dim", type=int, default=8, help="average pooling dimension")
         group.add_argument("--feat_dim", type=int, default=32, help="tri-plane feature dimension")
 
         # group.add_argument('--use_norm', type=int, default=1, help="use BN")
@@ -130,6 +132,7 @@ class Config(object):
     def _add_testing_config_(self, parser):
         """testing configuration"""
         group = parser.add_argument_group('testing')
+        group.add_argument('--ckpt', type=int, default=None, help="use checkpoint at x scale. By default, use the highest scale.")
         group.add_argument('--test_mode', type=str, default='rand', choices=['rand', 'rec'], help="random generation or reconstruction")
         group.add_argument("--resize", nargs="*", type=float, default=[1, 1, 1], help="resize factor along each axis")
         group.add_argument('--n_samples', type=int, default=1, help="number of samples to generate")

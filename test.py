@@ -14,7 +14,10 @@ def main():
     mymodel = SSGmodel(cfg)
 
     # load from checkpoint if provided
-    n_scales = len(os.listdir(cfg.model_dir))
+    n_scales = cfg.ckpt
+    if cfg.ckpt is None:
+        filename = sorted(os.listdir(cfg.model_dir))[-1]
+        n_scales = int(filename.split('_')[0][-1]) + 1
     mymodel.load_ckpt(n_scales)
 
     out_name = f"out_{cfg.test_mode}_n{cfg.n_samples}"

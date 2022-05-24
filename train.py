@@ -15,7 +15,7 @@ def main():
         mymodel.load_ckpt(cfg.ckpt)
 
     # create dataloader
-    real_data_list = load_data_fromH5(cfg.path)
+    real_data_list = load_data_fromH5(cfg.src_path)
 
     # training
     mymodel.train(real_data_list)
