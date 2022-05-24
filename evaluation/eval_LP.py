@@ -72,6 +72,7 @@ def main():
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    args.stride = args.patch_size // 2 if args.stride is None else args.stride
 
     random.seed(1234)
 
