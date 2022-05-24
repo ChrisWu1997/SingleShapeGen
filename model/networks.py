@@ -106,8 +106,8 @@ class GrowingGeneratorTriplane(nn.Module):
         out = torch.sigmoid(out)
         return out
     
-    def forward_head(self, init_noise, init_inp):
-        ni = init_noise + init_inp
+    def forward_head(self, init_noise):
+        ni = init_noise
 
         # extract triplane features at head
         in_shape = ni.shape[-3:]
@@ -121,7 +121,7 @@ class GrowingGeneratorTriplane(nn.Module):
         yz_feat, xz_feat, xy_feat = tri_feats
         if i > 0:
             # upsample
-            # up_size = real_shapes[i]
+            # up_size = real_sizes[i]
             yz_feat = F.interpolate(yz_feat, size=(up_size[1], up_size[2]), mode='bilinear', align_corners=True) # .detach()
             xz_feat = F.interpolate(xz_feat, size=(up_size[0], up_size[2]), mode='bilinear', align_corners=True) # .detach()
             xy_feat = F.interpolate(xy_feat, size=(up_size[0], up_size[1]), mode='bilinear', align_corners=True) # .detach()
@@ -136,11 +136,6 @@ class GrowingGeneratorTriplane(nn.Module):
             xz_feat = xz_feat + tri_noises[1]
             xy_feat = xy_feat + tri_noises[2]
 
-        # if self.pad_head:
-        #     yz_feat = self.pad_block(yz_feat)
-        #     xz_feat = self.pad_block(xz_feat)
-        #     xy_feat = self.pad_block(xy_feat)
-
         yz_feat, xz_feat, xy_feat = self.body[i]([yz_feat, xz_feat, xy_feat])
         # skip connect
         if i > 0:
@@ -154,29 +149,28 @@ class GrowingGeneratorTriplane(nn.Module):
         out = self.query([yz_feat, xz_feat, xy_feat], coords)
         return out
 
-    def draw_feats(self, init_noise, init_inp, real_shapes, noises_list, mode, end_scale):
-        tri_feats = self.forward_head(init_noise, init_inp)
+    def draw_feats(self, init_noise, real_sizes, noises_list, mode, end_scale):
+        tri_feats = self.forward_head(init_noise)
 
         for i in range(end_scale):
-            tri_feats = self.forward_scale(tri_feats, i, real_shapes[i], noises_list[i], mode)
+            tri_feats = self.forward_scale(tri_feats, i, real_sizes[i], noises_list[i], mode)
         return tri_feats
     
-    def decode_feats(self, tri_feats, real_shapes, noises_list, mode, start_scale, end_scale=-1):
+    def decode_feats(self, tri_feats, real_sizes, noises_list, mode, start_scale, end_scale=-1):
         if end_scale == -1:
             end_scale = len(self.body)
         for i in range(end_scale - start_scale):
-            tri_feats = self.forward_scale(tri_feats, start_scale + i, real_shapes[i], noises_list[i], mode)
+            tri_feats = self.forward_scale(tri_feats, start_scale + i, real_sizes[i], noises_list[i], mode)
         out = self.query(tri_feats)
         return out
 
-    def forward(self, init_noise, init_inp, real_shapes, noises_list, mode, coords=None, return_each=False, return_feat=False):
-        # FIXME: remove init_inp, as it's always 0
-        tri_feats = self.forward_head(init_noise, init_inp)
+    def forward(self, init_noise, real_sizes, noises_list, mode, coords=None, return_each=False, return_feat=False):
+        tri_feats = self.forward_head(init_noise)
 
         out_list = []
 
-        for i, block in enumerate(self.body[:len(real_shapes)]):
-            tri_feats = self.forward_scale(tri_feats, i, real_shapes[i], noises_list[i], mode)
+        for i, block in enumerate(self.body[:len(real_sizes)]):
+            tri_feats = self.forward_scale(tri_feats, i, real_sizes[i], noises_list[i], mode)
 
             if return_each:
                 out = self.query(tri_feats, coords)

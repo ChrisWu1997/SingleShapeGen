@@ -98,13 +98,12 @@ class SSGmodel(object):
         self.scale = n_scale
 
     def _draw_fake_in_training(self, mode):
-        init_inp = self.template
         init_noise = self.draw_init_noise(mode)
         real_sizes = self.real_sizes[:self.scale + 1]
         noises_list = self.draw_noises_list(mode, self.scale)
 
         if self.scale < self.train_depth:
-            fake = self.netG(init_noise, init_inp, real_sizes, noises_list, mode)
+            fake = self.netG(init_noise, real_sizes, noises_list, mode)
         else:
             # NOTE: get features from non-trainable scales under torch.no_grad(), seems to be quicker
             prev_depth = self.scale - self.train_depth
@@ -112,7 +111,7 @@ class SSGmodel(object):
                 prev_feats = self.prev_opt_feats
             else:
                 with torch.no_grad():
-                    prev_feats = self.netG.draw_feats(init_noise, init_inp, 
+                    prev_feats = self.netG.draw_feats(init_noise, 
                         real_sizes[:prev_depth + 1], noises_list[:prev_depth + 1], mode, prev_depth + 1)
                 prev_feats = [x.detach() for x in prev_feats]
                 if mode == 'rec' and self.prev_opt_feats is None:
@@ -263,7 +262,7 @@ class SSGmodel(object):
             # draw fixed noise for reconstruction
             if self.noiseOpt_init is None:
                 torch.manual_seed(1234)
-                self.noiseOpt_init = torch.randn_like(self.template)
+                self.noiseOpt_init = torch.randn_like(self.real_list[0])
 
             # draw gaussian noise std
             noise_amp = self._compute_noise_sigma(s)
@@ -277,14 +276,12 @@ class SSGmodel(object):
     def _set_real_data(self, real_data_list):
         print("real data resolutions: ", [x.shape for x in real_data_list])
         self.real_list = [torch.tensor(x, dtype=torch.float32).unsqueeze(0).unsqueeze(0).cuda() for x in real_data_list]
-        self.template = torch.zeros_like(self.real_list[0])
         self.real_sizes = [x.shape[-3:] for x in self.real_list]
 
     def _compute_noise_sigma(self, scale):
         s = scale
         if self.config.alpha > 0:
             if s > 0:
-                # prev_rec = self.netG(self.noiseOpt_init, self.template, self.real_sizes[:s], self.noiseAmp_list[:s], 'rec')
                 prev_rec = self.generate('rec', s - 1)
                 prev_rec = F.interpolate(prev_rec, size=self.real_list[s].shape[2:], mode='trilinear', align_corners=False)
                 noise_amp = self.config.base_noise_amp * torch.sqrt(F.mse_loss(self.real_list[s], prev_rec))
@@ -299,7 +296,7 @@ class SSGmodel(object):
             return self.noiseOpt_init
         else:
             if resize_factor[0] != 1.0 or resize_factor[1] != 1.0 or resize_factor[2] != 1.0:
-                init_size = [round(self.template.shape[-3:][i] * resize_factor[i]) for i in range(3)]
+                init_size = [round(self.real_sizes[i] * resize_factor[i]) for i in range(3)]
                 return torch.randn(*init_size, device=self.device)
             return torch.randn_like(self.noiseOpt_init)
     
@@ -321,21 +318,10 @@ class SSGmodel(object):
     
     def generate(self, mode, scale, resize_factor=(1.0, 1.0, 1.0), return_each=False):
         init_noise = self.draw_init_noise(mode, resize_factor)
-        init_inp = torch.zeros_like(init_noise)
         real_sizes = [[round(x[i] * resize_factor[i]) for i in range(3)] for x in self.real_sizes[:scale + 1]]
-        # if resize_factor != (1.0, 1.0, 1.0):
-        #     assert mode != 'rec'
-        #     init_size = [round(self.template.shape[-3:][i] * resize_factor[i]) for i in range(3)]
-        #     init_inp = F.interpolate(self.template, size=init_size, mode='trilinear', align_corners=True)
-        #     init_noise = torch.randn_like(init_inp)
-        #     real_sizes = [[round(x[i] * resize_factor[i]) for i in range(3)] for x in self.real_sizes[:scale + 1]]
-        # else:
-        #     init_inp = self.template
-        #     init_noise = self.draw_init_noise(mode)
-        #     real_sizes = self.real_sizes[:scale + 1]
         
         noises_list = self.draw_noises_list(mode, scale, resize_factor)
-        out = self.netG(init_noise, init_inp, real_sizes, noises_list, mode, return_each=return_each)
+        out = self.netG(init_noise, real_sizes, noises_list, mode, return_each=return_each)
         return out
 
     def _visualize_in_training(self, real_data):

@@ -20,7 +20,7 @@ def main():
         n_scales = int(filename.split('_')[0][-1]) + 1
     mymodel.load_ckpt(n_scales)
 
-    out_name = f"out_{cfg.test_mode}_n{cfg.n_samples}"
+    out_name = f"out_{cfg.mode}_n{cfg.n_samples}"
     if cfg.bin:
         out_name += "_bin"
     out_name += f"_r{cfg.resize[0]}x{cfg.resize[1]}x{cfg.resize[2]}"    
@@ -30,7 +30,7 @@ def main():
     end_scale = mymodel.scale
     for i in range(cfg.n_samples):
         since = time.time()
-        fake_ = mymodel.generate(cfg.test_mode, end_scale - 1, resize_factor=cfg.resize)
+        fake_ = mymodel.generate(cfg.mode, end_scale - 1, resize_factor=cfg.resize)
         fake_list = [fake_]
         end = time.time()
         print(f"{i}. time:{end - since}.")
