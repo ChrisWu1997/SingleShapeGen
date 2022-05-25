@@ -1,0 +1,309 @@
+{
+    "default": {
+        "mesh_position": [-1.12, -1.42, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.9,
+        "camLocation": [3, 0, 3.5]
+    },
+    "Acropolis": {
+        "mesh_position": [-1.12, -1.42, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.9,
+        "camLocation": [3, 0, 3.5]
+    },
+    "acropolis": {
+        "mesh_position": [-1.12, -1.42, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.9,
+        "camLocation": [3, 0, 3.5]
+    },
+    "franceB": {
+        "mesh_position": [0.81, 1.44, 0],
+        "mesh_rotation": [0, 0, 180],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "vase497": {
+        "mesh_position": [0.92, 0.76, 0],
+        "mesh_rotation": [0, 0, 180],
+        "mesh_scale": [1.7, 1.7, 1.7],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3]
+    },
+    "rock1221": {
+        "mesh_position": [0.92, 0.76, 0],
+        "mesh_rotation": [0, 0, 180],
+        "mesh_scale": [1.7, 1.7, 1.7],
+        "light_angle": [6, -70, -120],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3]
+    },
+    "stalagmites": {
+        "mesh_position": [1.44, -1.29, 0],
+        "mesh_rotation": [0, 0, 90],
+        "mesh_scale": [2.3, 2.3, 2.3],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "rockstairs": {
+        "mesh_position": [0.53, -1.52, 0],
+        "mesh_rotation": [90, 0, 180],
+        "mesh_scale": [3.0, 3.0, 3.0],
+        "light_angle": [6, -50, -90],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "log": {
+        "mesh_position": [0.93, 0.15, 0],
+        "mesh_rotation": [90, 0, 25],
+        "mesh_scale": [1.3, 1.3, 1.3],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 2]
+    },
+    "log_small": {
+        "mesh_position": [0.45, 0.15, 0],
+        "mesh_rotation": [90, 0, 25],
+        "mesh_scale": [1.3, 1.3, 1.3],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 2]
+    },
+    "cheese": {
+        "mesh_position": [-0.1, -0.99, 0],
+        "mesh_rotation": [90, 0, 145],
+        "mesh_scale": [2.0, 2.0, 2.0],
+        "light_angle": [6, -60, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "cactus2": {
+        "mesh_position": [0.35, -0.43, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [1.5, 1.5, 1.5],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 2.5]
+    },
+    "wall": {
+        "mesh_position": [-0.1, -0.5, 0],
+        "mesh_rotation": [90, 0, 75],
+        "mesh_scale": [1.25, 1.25, 1.25],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "poptree": {
+        "mesh_position": [0, 0.15, 0],
+        "mesh_rotation": [90, 0, 35],
+        "mesh_scale": [1.3, 1.3, 1.3],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 2]
+    },
+    "stonestairs": {
+        "mesh_position": [0.38, -0.51, 0],
+        "mesh_rotation": [90, 0, 210],
+        "mesh_scale": [2.0, 2.0, 2.0],
+        "light_angle": [6, -50, -90],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "icelandic": {
+        "mesh_position": [-2.44, -1.43, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "cactusLP1": {
+        "mesh_position": [0.27, 0.15, 0],
+        "mesh_rotation": [90, 0, 25],
+        "mesh_scale": [1.3, 1.3, 1.3],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 2]
+    },
+    "watermountain": {
+        "mesh_position": [-2.5, 0, 0],
+        "mesh_rotation": [90, 0, 45],
+        "mesh_scale": [2.5, 2.5, 2.5],
+        "shading": "smooth",
+        "subdivision_iteration": 0,
+        "mesh_color": "green",
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "bookshelfRs": {
+        "mesh_position": [-0.1, -0.5, 0],
+        "mesh_rotation": [90, 0, 75],
+        "mesh_scale": [1.25, 1.25, 1.25],
+        "light_angle": [6, -50, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "castle": {
+        "mesh_position": [-2.0, 1.22, 0],
+        "mesh_rotation": [90, 0, 0],
+        "mesh_scale": [2.5, 2.5, 2.5],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "table1": {
+        "mesh_position": [-0.1, -0.5, 0],
+        "mesh_rotation": [90, 0, 60],
+        "mesh_scale": [1.25, 1.25, 1.25],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "superterrain": {
+        "mesh_position": [-2.31, -1.44, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "chair46c8": {
+        "mesh_position": [-0.1, 0.6, 0],
+        "mesh_rotation": [90, 0, -30],
+        "mesh_scale": [1.0, 1.0, 1.0],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "tree85": {
+        "mesh_position": [-0.1, -0.25, 0],
+        "mesh_rotation": [90, 0, 60],
+        "mesh_scale": [1.0, 1.0, 1.0],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "strange_terrain": {
+        "mesh_position": [0.81, 0.99, 0],
+        "mesh_rotation": [0, 0, 180],
+        "mesh_scale": [2.0, 2.0, 2.0],
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "wood": {
+        "mesh_position": [-0.45, -1.42, 0],
+        "mesh_rotation": [90, 0, 105],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "nihon": {
+        "mesh_position": [-0.1, -0.1, 0],
+        "mesh_rotation": [90, 0, 60],
+        "mesh_scale": [1.25, 1.25, 1.25],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "boulderstone": {
+        "mesh_position": [-0.7, -0.7, 0],
+        "mesh_rotation": [90, 0, 60],
+        "mesh_scale": [2.0, 2.0, 2.0],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "penholder": {
+        "mesh_position": [0.22, -0.75, 0],
+        "mesh_rotation": [0, 0, 60],
+        "mesh_scale": [1.25, 1.25, 1.25],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "canyon": {
+        "mesh_position": [0.81, 1.0, 0],
+        "mesh_rotation": [0, 0, 180],
+        "mesh_scale": [2.0, 2.0, 2.0],
+        "light_angle": [6, -70, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "pot_f04a": {
+        "mesh_position": [-1.12, -1.42, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.9,
+        "camLocation": [3, 0, 3.5]
+    },
+    "small_town": {
+        "mesh_position": [-1.12, -1.42, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.9,
+        "camLocation": [3, 0, 3.5]
+    },
+    "curve_vase": {
+        "mesh_position": [0.95, -0.42, 0],
+        "mesh_rotation": [0, 0, 110],
+        "mesh_scale": [1.7, 1.7, 1.7],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3]
+    },
+    "sea_arch": {
+        "mesh_position": [-1.22, 1.46, 0],
+        "mesh_rotation": [90, 0, 0],
+        "mesh_scale": [2.9, 2.9, 2.9],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "stone_wall_C": {
+        "mesh_position": [-0.1, -0.95, 0],
+        "mesh_rotation": [0, 0, 75],
+        "mesh_scale": [1.75, 1.75, 1.75],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "elm_tree": {
+        "mesh_position": [-0.1, -0.4, 0],
+        "mesh_rotation": [90, 0, 90],
+        "mesh_scale": [1.25, 1.25, 1.25],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    },
+    "ruin_wall": {
+        "mesh_position": [-0.9, -1.3, 0],
+        "mesh_rotation": [90, 0, 120],
+        "mesh_scale": [2.0, 2.0, 2.0],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 3.5]
+    },
+    "industry_house": {
+        "mesh_position": [-0.1, -0.8, 0],
+        "mesh_rotation": [90, 0, 160],
+        "mesh_scale": [1.5, 1.5, 1.5],
+        "light_angle": [6, -30, -155],
+        "ground_shadowBrightness": 0.99,
+        "camLocation": [3, 0, 1.5]
+    }
+}

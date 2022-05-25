@@ -40,6 +40,17 @@ def voxelGrid2mesh(shape, laplacian=0, color=None):
     return mesh
 
 
+def normalize_mesh(mesh: trimesh.Trimesh):
+    verts = mesh.vertices
+    min_corner = np.min(verts, axis=0)
+    max_corner = np.max(verts, axis=0)
+    box_size = np.abs(max_corner - min_corner)
+    verts = verts - min_corner[np.newaxis]
+    verts = verts * (1. / np.max(box_size))
+    mesh.vertices = verts
+    return mesh
+
+
 def get_biggest_connected_compoent(voxels):
     labels, num = morphology.label(voxels, return_num=True)
     max_ind = 1
@@ -52,11 +63,3 @@ def get_biggest_connected_compoent(voxels):
     mask = labels == max_ind
     voxels[~mask] = 0
     return voxels
-
-
-def test():
-    pass
-
-
-if __name__ == "__main__":
-    test()

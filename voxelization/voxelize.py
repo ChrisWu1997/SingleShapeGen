@@ -38,7 +38,7 @@ def multiscale_voxelization_binvox(path, resolution_list, min_size):
     """voxelization at different resolution"""
     # normalize to -1 ~ 1 and save
     mesh = load_mesh(path, normalize=True)
-    norm_path = path.split('.')[0] + '_norm.obj'
+    norm_path = os.path.splitext(path) + '_norm.obj'
     mesh.export(norm_path)
     mesh = None
 
@@ -52,7 +52,7 @@ def multiscale_voxelization_binvox(path, resolution_list, min_size):
         # voxelize by binvox (only surface voxels)
         command = f'{BINVOX_PATH} -cb -e -d {binvox_res} {norm_path}'
         os.system(command)
-        out_path = norm_path.split('.')[0] + '.binvox'
+        out_path = os.path.splitext(norm_path)[0] + '.binvox'
         
         # load voxels and fill inside
         with open(out_path, 'rb') as f:
