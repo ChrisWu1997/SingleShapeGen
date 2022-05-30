@@ -32,6 +32,8 @@ def generate(cfg, ssg_model: SSGmodel):
     out_name = f"{cfg.mode}_n{cfg.n_samples}"
     if cfg.bin:
         out_name += "_bin"
+    if cfg.upsample > 1:
+        out_name += f"_x{cfg.upsample}"
     out_name += f"_r{cfg.resize[0]}x{cfg.resize[1]}x{cfg.resize[2]}"    
     save_dir = os.path.join(cfg.exp_dir, out_name)
     ensure_dir(save_dir)
@@ -39,11 +41,10 @@ def generate(cfg, ssg_model: SSGmodel):
     for i in range(cfg.n_samples):
         since = time.time()
         with torch.no_grad():
-            fake_ = ssg_model.generate(cfg.mode, resize_factor=cfg.resize)
+            fake_ = ssg_model.generate(cfg.mode, resize_factor=cfg.resize, upsample=cfg.upsample)
         end = time.time()
         print(f"{i}. time:{end - since}.")
         fake_ = fake_.detach().cpu().numpy()[0, 0]
-        print(fake_.shape)
         if cfg.bin:
             fake_ = fake_ > 0.5
         

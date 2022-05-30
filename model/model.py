@@ -7,7 +7,7 @@ from collections import OrderedDict
 from tensorboardX import SummaryWriter
 import numpy as np
 from .networks import get_network
-from .model_utils import calc_gradient_penalty, set_require_grads, generate_tri_plane_noise, draw_mat_figure_along_xyz, TrainClock
+from .model_utils import calc_gradient_penalty, set_require_grads, generate_tri_plane_noise, draw_mat_figure_along_xyz, make_coord, TrainClock
 
 
 class SSGmodel(object):
@@ -321,10 +321,13 @@ class SSGmodel(object):
             scale = self.scale
         init_noise = self.draw_init_noise(mode, resize_factor)
         real_sizes = [[round(x[i] * resize_factor[i]) for i in range(3)] for x in self.real_sizes[:scale + 1]]
-        query_shape = [round(x * upsample) for x in real_sizes[-1]]
-        
         noises_list = self.draw_noises_list(mode, scale, resize_factor)
-        out = self.netG(init_noise, real_sizes, noises_list, mode, return_each=return_each)
+
+        coords = None
+        if upsample > 1:
+            query_shape = [round(x * upsample) for x in real_sizes[-1]]
+            coords = make_coord(*query_shape, self.device)
+        out = self.netG(init_noise, real_sizes, noises_list, mode, coords, return_each=return_each)
         return out
 
     def _visualize_in_training(self, real_data):

@@ -11,8 +11,6 @@ def get_config(phase):
 
 
 class Config(object):
-    """Base class of Config, provide necessary hyperparameters. 
-    """
     def __init__(self, phase):
         self.is_train = phase == "train"
 
@@ -135,8 +133,8 @@ class Config(object):
         group.add_argument('--ckpt', type=int, default=None, help="use checkpoint at scale x. By default, use the highest scale.")
         group.add_argument('--mode', type=str, default='rand', choices=['rand', 'rec', 'interp'], help="inference mode")
         group.add_argument("--resize", nargs="*", type=float, default=[1, 1, 1], help="resize factor along each axis")
+        group.add_argument('--upsample', type=int, default=1, help=">1 for higher resolution output")
         group.add_argument('--n_samples', type=int, default=1, help="number of samples to generate")
-        # group.add_argument('--bin', action='store_true', help="binarize the output so to save as boolean type")
         group.add_argument('--no_bin', dest='bin', action='store_false', help='save non-binary output')
         group.set_defaults(bin=True)
         # group.add_argument('--seq', action='store_true', help="save result of each scale")

@@ -40,6 +40,20 @@ def generate_tri_plane_noise(res_x, res_y, res_z, nf, noise_amp, device):
     return noise
 
 
+def make_coord(H, W, D, device, normalize=True):
+    """ Make coordinates at grid centers."""
+    xs = torch.arange(H, device=device).float() 
+    ys = torch.arange(W, device=device).float()
+    zs = torch.arange(D, device=device).float()
+    if normalize:
+        xs = xs / (H - 1) * 2 - 1 # (-1, 1)
+        ys = ys / (W - 1) * 2 - 1 # (-1, 1)
+        zs = zs / (D - 1) * 2 - 1 # (-1, 1)
+
+    coords = torch.stack(torch.meshgrid(xs, ys, zs), dim=-1)
+    return coords
+
+
 def draw_mat_figure_along_xyz(voxel, mid=True, grayscale=True):
     img1 = np.amax(voxel, axis=0) if not mid else voxel[voxel.shape[0] // 2]
     img2 = np.amax(voxel, axis=1) if not mid else voxel[:, voxel.shape[1] // 2]
