@@ -15,15 +15,7 @@
         "ground_shadowBrightness": 0.9,
         "camLocation": [3, 0, 3.5]
     },
-    "acropolis": {
-        "mesh_position": [-1.12, -1.42, 0],
-        "mesh_rotation": [90, 0, 90],
-        "mesh_scale": [2.9, 2.9, 2.9],
-        "light_angle": [6, -30, -155],
-        "ground_shadowBrightness": 0.9,
-        "camLocation": [3, 0, 3.5]
-    },
-    "franceB": {
+    "Terrain": {
         "mesh_position": [0.81, 1.44, 0],
         "mesh_rotation": [0, 0, 180],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -31,7 +23,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "vase497": {
+    "Vase": {
         "mesh_position": [0.92, 0.76, 0],
         "mesh_rotation": [0, 0, 180],
         "mesh_scale": [1.7, 1.7, 1.7],
@@ -39,7 +31,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3]
     },
-    "rock1221": {
+    "Rock": {
         "mesh_position": [0.92, 0.76, 0],
         "mesh_rotation": [0, 0, 180],
         "mesh_scale": [1.7, 1.7, 1.7],
@@ -47,7 +39,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3]
     },
-    "stalagmites": {
+    "Stalagmites": {
         "mesh_position": [1.44, -1.29, 0],
         "mesh_rotation": [0, 0, 90],
         "mesh_scale": [2.3, 2.3, 2.3],
@@ -55,7 +47,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "rockstairs": {
+    "RockStairs": {
         "mesh_position": [0.53, -1.52, 0],
         "mesh_rotation": [90, 0, 180],
         "mesh_scale": [3.0, 3.0, 3.0],
@@ -63,7 +55,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "log": {
+    "Log": {
         "mesh_position": [0.93, 0.15, 0],
         "mesh_rotation": [90, 0, 25],
         "mesh_scale": [1.3, 1.3, 1.3],
@@ -71,15 +63,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 2]
     },
-    "log_small": {
-        "mesh_position": [0.45, 0.15, 0],
-        "mesh_rotation": [90, 0, 25],
-        "mesh_scale": [1.3, 1.3, 1.3],
-        "light_angle": [6, -30, -155],
-        "ground_shadowBrightness": 0.99,
-        "camLocation": [3, 0, 2]
-    },
-    "cheese": {
+    "Cheese": {
         "mesh_position": [-0.1, -0.99, 0],
         "mesh_rotation": [90, 0, 145],
         "mesh_scale": [2.0, 2.0, 2.0],
@@ -87,7 +71,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "cactus2": {
+    "Cactus": {
         "mesh_position": [0.35, -0.43, 0],
         "mesh_rotation": [90, 0, 90],
         "mesh_scale": [1.5, 1.5, 1.5],
@@ -95,7 +79,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 2.5]
     },
-    "wall": {
+    "Wall": {
         "mesh_position": [-0.1, -0.5, 0],
         "mesh_rotation": [90, 0, 75],
         "mesh_scale": [1.25, 1.25, 1.25],
@@ -103,7 +87,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "poptree": {
+    "Tree": {
         "mesh_position": [0, 0.15, 0],
         "mesh_rotation": [90, 0, 35],
         "mesh_scale": [1.3, 1.3, 1.3],
@@ -111,7 +95,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 2]
     },
-    "stonestairs": {
+    "StoneStairs": {
         "mesh_position": [0.38, -0.51, 0],
         "mesh_rotation": [90, 0, 210],
         "mesh_scale": [2.0, 2.0, 2.0],
@@ -119,7 +103,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "icelandic": {
+    "IcelandicMountain": {
         "mesh_position": [-2.44, -1.43, 0],
         "mesh_rotation": [90, 0, 90],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -127,7 +111,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "cactusLP1": {
+    "DesertCactus": {
         "mesh_position": [0.27, 0.15, 0],
         "mesh_rotation": [90, 0, 25],
         "mesh_scale": [1.3, 1.3, 1.3],
@@ -135,18 +119,15 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 2]
     },
-    "watermountain": {
+    "WaterMountain": {
         "mesh_position": [-2.5, 0, 0],
         "mesh_rotation": [90, 0, 45],
         "mesh_scale": [2.5, 2.5, 2.5],
-        "shading": "smooth",
-        "subdivision_iteration": 0,
-        "mesh_color": "green",
         "light_angle": [6, -70, -155],
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "bookshelfRs": {
+    "BookshelfRs": {
         "mesh_position": [-0.1, -0.5, 0],
         "mesh_rotation": [90, 0, 75],
         "mesh_scale": [1.25, 1.25, 1.25],
@@ -154,7 +135,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "castle": {
+    "Castle": {
         "mesh_position": [-2.0, 1.22, 0],
         "mesh_rotation": [90, 0, 0],
         "mesh_scale": [2.5, 2.5, 2.5],
@@ -162,7 +143,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "table1": {
+    "Table": {
         "mesh_position": [-0.1, -0.5, 0],
         "mesh_rotation": [90, 0, 60],
         "mesh_scale": [1.25, 1.25, 1.25],
@@ -170,7 +151,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "superterrain": {
+    "Terrain2": {
         "mesh_position": [-2.31, -1.44, 0],
         "mesh_rotation": [90, 0, 90],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -178,7 +159,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "chair46c8": {
+    "Chair46c8": {
         "mesh_position": [-0.1, 0.6, 0],
         "mesh_rotation": [90, 0, -30],
         "mesh_scale": [1.0, 1.0, 1.0],
@@ -186,7 +167,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "tree85": {
+    "Tree85": {
         "mesh_position": [-0.1, -0.25, 0],
         "mesh_rotation": [90, 0, 60],
         "mesh_scale": [1.0, 1.0, 1.0],
@@ -194,7 +175,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "strange_terrain": {
+    "StrangeTerrain": {
         "mesh_position": [0.81, 0.99, 0],
         "mesh_rotation": [0, 0, 180],
         "mesh_scale": [2.0, 2.0, 2.0],
@@ -202,7 +183,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "wood": {
+    "FloatingWood": {
         "mesh_position": [-0.45, -1.42, 0],
         "mesh_rotation": [90, 0, 105],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -210,7 +191,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "nihon": {
+    "CubeHotel": {
         "mesh_position": [-0.1, -0.1, 0],
         "mesh_rotation": [90, 0, 60],
         "mesh_scale": [1.25, 1.25, 1.25],
@@ -218,7 +199,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "boulderstone": {
+    "BoulderStone": {
         "mesh_position": [-0.7, -0.7, 0],
         "mesh_rotation": [90, 0, 60],
         "mesh_scale": [2.0, 2.0, 2.0],
@@ -226,15 +207,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "penholder": {
-        "mesh_position": [0.22, -0.75, 0],
-        "mesh_rotation": [0, 0, 60],
-        "mesh_scale": [1.25, 1.25, 1.25],
-        "light_angle": [6, -30, -155],
-        "ground_shadowBrightness": 0.99,
-        "camLocation": [3, 0, 1.5]
-    },
-    "canyon": {
+    "Canyon": {
         "mesh_position": [0.81, 1.0, 0],
         "mesh_rotation": [0, 0, 180],
         "mesh_scale": [2.0, 2.0, 2.0],
@@ -242,7 +215,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "pot_f04a": {
+    "PlantPot": {
         "mesh_position": [-1.12, -1.42, 0],
         "mesh_rotation": [90, 0, 90],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -250,7 +223,7 @@
         "ground_shadowBrightness": 0.9,
         "camLocation": [3, 0, 3.5]
     },
-    "small_town": {
+    "SmallTown": {
         "mesh_position": [-1.12, -1.42, 0],
         "mesh_rotation": [90, 0, 90],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -258,7 +231,7 @@
         "ground_shadowBrightness": 0.9,
         "camLocation": [3, 0, 3.5]
     },
-    "curve_vase": {
+    "CurvedVase": {
         "mesh_position": [0.95, -0.42, 0],
         "mesh_rotation": [0, 0, 110],
         "mesh_scale": [1.7, 1.7, 1.7],
@@ -266,7 +239,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3]
     },
-    "sea_arch": {
+    "NaturalArch": {
         "mesh_position": [-1.22, 1.46, 0],
         "mesh_rotation": [90, 0, 0],
         "mesh_scale": [2.9, 2.9, 2.9],
@@ -274,7 +247,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "stone_wall_C": {
+    "StoneWall": {
         "mesh_position": [-0.1, -0.95, 0],
         "mesh_rotation": [0, 0, 75],
         "mesh_scale": [1.75, 1.75, 1.75],
@@ -282,7 +255,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "elm_tree": {
+    "ElmTree": {
         "mesh_position": [-0.1, -0.4, 0],
         "mesh_rotation": [90, 0, 90],
         "mesh_scale": [1.25, 1.25, 1.25],
@@ -290,7 +263,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 1.5]
     },
-    "ruin_wall": {
+    "RuinedBuilding": {
         "mesh_position": [-0.9, -1.3, 0],
         "mesh_rotation": [90, 0, 120],
         "mesh_scale": [2.0, 2.0, 2.0],
@@ -298,7 +271,7 @@
         "ground_shadowBrightness": 0.99,
         "camLocation": [3, 0, 3.5]
     },
-    "industry_house": {
+    "IndustryHouse": {
         "mesh_position": [-0.1, -0.8, 0],
         "mesh_rotation": [90, 0, 160],
         "mesh_scale": [1.5, 1.5, 1.5],
