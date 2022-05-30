@@ -40,7 +40,7 @@ if __name__ == "__main__":
         mesh = voxelGrid2mesh(shape, args.smooth)
         mesh = normalize_mesh(mesh)
 
-        name = path.split('/')[-1].split('.')[0]
+        name = os.path.splitext(os.path.basename(path))[0]
         mesh_path = os.path.join(out_dir, name + '.obj')
         print('->', mesh_path)
         mesh.export(mesh_path)

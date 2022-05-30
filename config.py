@@ -114,7 +114,7 @@ class Config(object):
     def _add_training_config_(self, parser):
         """training configuration"""
         group = parser.add_argument_group('training')
-        group.add_argument('--ckpt', type=int, default=None, help="restore checkpoint at x scale")
+        group.add_argument('--ckpt', type=int, default=None, help="restore checkpoint at scale x")
         group.add_argument('--save_frequency', type=int, default=3000, help="save models every x iterations")
         group.add_argument('--vis_frequency', type=int, default=200, help="visualize output every x iterations")
         group.add_argument('--n_iters', type=int, default=2000, help='number of iterations to train per scale')
@@ -132,9 +132,11 @@ class Config(object):
     def _add_testing_config_(self, parser):
         """testing configuration"""
         group = parser.add_argument_group('testing')
-        group.add_argument('--ckpt', type=int, default=None, help="use checkpoint at x scale. By default, use the highest scale.")
-        group.add_argument('--mode', type=str, default='rand', choices=['rand', 'rec'], help="inference mode")
+        group.add_argument('--ckpt', type=int, default=None, help="use checkpoint at scale x. By default, use the highest scale.")
+        group.add_argument('--mode', type=str, default='rand', choices=['rand', 'rec', 'interp'], help="inference mode")
         group.add_argument("--resize", nargs="*", type=float, default=[1, 1, 1], help="resize factor along each axis")
         group.add_argument('--n_samples', type=int, default=1, help="number of samples to generate")
-        group.add_argument('--bin', action='store_true', help="binarize the output so to save as boolean type")
+        # group.add_argument('--bin', action='store_true', help="binarize the output so to save as boolean type")
+        group.add_argument('--no_bin', dest='bin', action='store_false', help='save non-binary output')
+        group.set_defaults(bin=True)
         # group.add_argument('--seq', action='store_true', help="save result of each scale")

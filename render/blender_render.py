@@ -4,7 +4,7 @@ import os, bpy, bmesh
 this_dir = os.path.dirname(bpy.data.filepath)
 if not this_dir in sys.path:
     sys.path.append(this_dir)
-from render.blender_utils import ArgumentParserForBlender, BLENDERTOOLBOX_PATH
+from blender_utils import ArgumentParserForBlender, BLENDERTOOLBOX_PATH
 sys.path.append(BLENDERTOOLBOX_PATH)
 import BlenderToolBox as bt
 

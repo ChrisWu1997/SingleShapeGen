@@ -21,7 +21,6 @@ class SSGmodel(object):
         self.scale = 0
         self.netD = get_network(config, 'D').cuda()
         self.netG = get_network(config, 'G').cuda()
-        # self.noiseOpt_list = []
         self.noiseOpt_init = None # assume rec use all zero noise for scale > 0
         self.noiseAmp_list = [] # gaussian noise std for each scale
         self.real_sizes = [] # real data spatial dimensions
@@ -73,8 +72,7 @@ class SSGmodel(object):
 
     def load_ckpt(self, n_scale):
         """load checkpoint from saved checkpoint"""
-        s = n_scale - 1
-        load_path = os.path.join(self.model_dir, "scale{}_latest.pth".format(s))
+        load_path = os.path.join(self.model_dir, "scale{}_latest.pth".format(n_scale))
         if not os.path.exists(load_path):
             raise ValueError("Checkpoint {} not exists.".format(load_path))
         print("Loading checkpoint from {} ...".format(load_path))
@@ -83,7 +81,7 @@ class SSGmodel(object):
         self.noiseOpt_init = checkpoint['noiseOpt_init'].cuda()
         self.noiseAmp_list = checkpoint['noiseAmp_list']
         self.real_sizes = checkpoint['realSizes_list']
-        for s in range(n_scale):
+        for _ in range(n_scale + 1):
             self.netG.init_next_scale()
         self.netG.load_state_dict(checkpoint['netG_state_dict'])
         self.netD.load_state_dict(checkpoint['netD_state_dict'])
@@ -300,7 +298,9 @@ class SSGmodel(object):
                 return torch.randn(*init_size, device=self.device)
             return torch.randn_like(self.noiseOpt_init)
     
-    def draw_noises_list(self, mode, scale, resize_factor=(1.0, 1.0, 1.0)):
+    def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
+        if scale is None:
+            scale = self.scale
         noises_list = [] # first scale no additive noise
         for i in range(scale + 1):
             if i == 0:
@@ -316,9 +316,12 @@ class SSGmodel(object):
                     noises_list.append(tri_noise)
         return noises_list
     
-    def generate(self, mode, scale, resize_factor=(1.0, 1.0, 1.0), return_each=False):
+    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
+        if scale is None:
+            scale = self.scale
         init_noise = self.draw_init_noise(mode, resize_factor)
         real_sizes = [[round(x[i] * resize_factor[i]) for i in range(3)] for x in self.real_sizes[:scale + 1]]
+        query_shape = [round(x * upsample) for x in real_sizes[-1]]
         
         noises_list = self.draw_noises_list(mode, scale, resize_factor)
         out = self.netG(init_noise, real_sizes, noises_list, mode, return_each=return_each)
