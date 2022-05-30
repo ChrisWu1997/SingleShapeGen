@@ -2,13 +2,13 @@ import os
 import h5py
 import time
 import torch
-from config import get_config
+from config import Config
 from model import SSGmodel
 from utils.file_utils import ensure_dir
 
 
 def main():
-    cfg = get_config('test')
+    cfg = Config('test')
 
     ssg_model = SSGmodel(cfg)
 

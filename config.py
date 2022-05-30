@@ -5,11 +5,6 @@ import shutil
 from utils.file_utils import ensure_dirs
 
 
-def get_config(phase):
-    config = Config(phase)
-    return config
-
-
 class Config(object):
     def __init__(self, phase):
         self.is_train = phase == "train"
