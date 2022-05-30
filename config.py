@@ -51,9 +51,9 @@ class Config(object):
         if self.is_train:
             with open(os.path.join(self.exp_dir, 'config.json'), 'w') as f:
                 json.dump(args.__dict__, f, indent=2)
-            copy_code_dir = os.path.join(self.exp_dir, "code") # FIXME: remove when release
-            ensure_dirs(copy_code_dir)
-            os.system("cp *.py {}".format(copy_code_dir))
+            # copy_code_dir = os.path.join(self.exp_dir, "code") # FIXME: remove when release
+            # ensure_dirs(copy_code_dir)
+            # os.system("cp *.py {}".format(copy_code_dir))
 
     def parse(self):
         """initiaize argument parser. Define default hyperparameters and collect from command-line arguments."""
@@ -78,7 +78,7 @@ class Config(object):
     def _add_basic_config_(self, parser):
         """add general hyperparameters"""
         group = parser.add_argument_group('basic')
-        group.add_argument('--proj_dir', type=str, default="project_log", help="a folder where models and logs will be saved")
+        group.add_argument('--proj_dir', type=str, default="checkpoints", help="a folder where models and logs will be saved")
         group.add_argument('--tag', type=str, required=True, help="name of this experiment")
         group.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
 
