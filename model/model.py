@@ -7,7 +7,7 @@ from collections import OrderedDict
 from tensorboardX import SummaryWriter
 import numpy as np
 from .networks import get_network
-from .model_utils import calc_gradient_penalty, set_require_grads, generate_tri_plane_noise, draw_mat_figure_along_xyz, make_coord, TrainClock
+from .model_utils import calc_gradient_penalty, set_require_grads, generate_tri_plane_noise, slice_volume_along_xyz, make_coord, TrainClock
 
 
 class SSGmodel(object):
@@ -333,13 +333,16 @@ class SSGmodel(object):
     def _visualize_in_training(self, real_data):
         if self.clock.step == 0:
             real_data_ = real_data.detach().cpu().numpy()[0, 0]
-            self.train_tb.add_figure('real', draw_mat_figure_along_xyz(real_data_), self.clock.step)
+            self.train_tb.add_image('real', slice_volume_along_xyz(real_data_), self.clock.step, dataformats='HW')
+            # self.train_tb.add_figure('real', draw_mat_figure_along_xyz(real_data_), self.clock.step)
 
         with torch.no_grad():
             fake1_ = self.generate('rand', self.scale)
             rec_ = self.generate('rec', self.scale)
 
         fake1_ = fake1_.detach().cpu().numpy()[0, 0]
-        self.train_tb.add_figure('fake1', draw_mat_figure_along_xyz(fake1_), self.clock.step)
+        self.train_tb.add_image('fake1', slice_volume_along_xyz(fake1_), self.clock.step, dataformats='HW')
+        # self.train_tb.add_figure('fake1', draw_mat_figure_along_xyz(fake1_), self.clock.step)
         rec_ = rec_.detach().cpu().numpy()[0, 0]
-        self.train_tb.add_figure('rec', draw_mat_figure_along_xyz(rec_), self.clock.step)
+        self.train_tb.add_image('rec', slice_volume_along_xyz(rec_), self.clock.step, dataformats='HW')
+        # self.train_tb.add_figure('rec', draw_mat_figure_along_xyz(rec_), self.clock.step)

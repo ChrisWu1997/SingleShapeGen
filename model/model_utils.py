@@ -1,8 +1,5 @@
 import numpy as np
 import torch
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
 
 
 def calc_gradient_penalty(netD, real_data, fake_data):
@@ -54,19 +51,18 @@ def make_coord(H, W, D, device, normalize=True):
     return coords
 
 
-def draw_mat_figure_along_xyz(voxel, mid=True, grayscale=True):
-    img1 = np.amax(voxel, axis=0) if not mid else voxel[voxel.shape[0] // 2]
-    img2 = np.amax(voxel, axis=1) if not mid else voxel[:, voxel.shape[1] // 2]
-    img3 = np.amax(voxel, axis=2) if not mid else voxel[:, :, voxel.shape[2] // 2]
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 3))
-    cax1 = ax1.matshow(img1, cmap='gray') if grayscale else ax1.matshow(img1)
-    cax2 = ax2.matshow(img2, cmap='gray') if grayscale else ax2.matshow(img2)
-    cax3 = ax3.matshow(img3, cmap='gray') if grayscale else ax3.matshow(img3)
-    fig.colorbar(cax1, ax=ax1, fraction=0.046, pad=0.04)
-    fig.colorbar(cax2, ax=ax2, fraction=0.046, pad=0.04)
-    fig.colorbar(cax3, ax=ax3, fraction=0.046, pad=0.04)
-    fig.tight_layout()
-    return fig
+def slice_volume_along_xyz(volume: np.ndarray):
+    img1 = volume[volume.shape[0] // 2]
+    img2 = volume[:, volume.shape[0] // 2]
+    img3 = volume[:, :, volume.shape[0] // 2]
+    _max = max(img1.shape[0], img2.shape[0], img3.shape[0])
+
+    img1 = np.pad(img1, [(0, _max - img1.shape[0]), (1, 1)])
+    img2 = np.pad(img2, [(0, _max - img2.shape[0]), (1, 1)])
+    img3 = np.pad(img3, [(0, _max - img3.shape[0]), (1, 1)])
+
+    img = np.concatenate([img1, img2, img3], axis=1)
+    return img
 
 
 class TrainClock(object):
