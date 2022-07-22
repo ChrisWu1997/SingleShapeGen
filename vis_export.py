@@ -3,7 +3,6 @@ import argparse
 from trimesh.voxel.encoding import DenseEncoding
 from trimesh.voxel import VoxelGrid
 from utils.data_utils import get_biggest_connected_compoent, load_data_fromH5, voxelGrid2mesh
-from utils.file_utils import ensure_dir
 
 
 if __name__ == "__main__":
@@ -45,7 +44,7 @@ if __name__ == "__main__":
                     save_dir = args.src + f'_{args.export}'
                 else:
                     save_dir = os.path.dirname(args.src) + f'_{args.export}'
-                ensure_dir(save_dir)
+                os.makedirs(save_dir, exist_ok=True)
                 name = path.split('/')[-1].split('.')[0]
                 save_path = os.path.join(save_dir, name + f'.{args.export}')
                 mesh.export(save_path)

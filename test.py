@@ -4,7 +4,6 @@ import time
 import torch
 from config import Config
 from model import SSGmodel
-from utils.file_utils import ensure_dir
 
 
 def main():
@@ -36,7 +35,7 @@ def generate(cfg, ssg_model: SSGmodel):
         out_name += f"_x{cfg.upsample}"
     out_name += f"_r{cfg.resize[0]}x{cfg.resize[1]}x{cfg.resize[2]}"    
     save_dir = os.path.join(cfg.exp_dir, out_name)
-    ensure_dir(save_dir)
+    os.makedirs(save_dir, exist_ok=True)
 
     for i in range(cfg.n_samples):
         since = time.time()
@@ -58,7 +57,7 @@ def interpolate(cfg, ssg_model: SSGmodel):
     if cfg.bin:
         out_name += "_bin"
     out_dir = os.path.join(cfg.exp_dir, out_name)
-    ensure_dir(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
 
     # NOTE: hard-coded blending weights    
     alpha_list = [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
@@ -83,7 +82,7 @@ def interpolate(cfg, ssg_model: SSGmodel):
                 fake_ = fake_ > 0.5
             
             save_dir = os.path.join(out_dir, f'pair{k}')
-            ensure_dir(save_dir)
+            os.makedirs(save_dir, exist_ok=True)
             save_path = os.path.join(save_dir, f"fake_{i:02d}_alpha{alpha}.h5")
             _save_single(save_path, fake_, ssg_model.scale + 1)
 

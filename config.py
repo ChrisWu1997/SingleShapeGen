@@ -2,7 +2,6 @@ import os
 import argparse
 import json
 import shutil
-from utils.file_utils import ensure_dirs
 
 
 class Config(object):
@@ -45,7 +44,8 @@ class Config(object):
             if response != 'y':
                 exit()
             shutil.rmtree(self.exp_dir)
-        ensure_dirs([self.log_dir, self.model_dir])
+        os.makedirs(self.log_dir, exist_ok=True)
+        os.makedirs(self.model_dir, exist_ok=True)
 
         # save this configuration
         if self.is_train:
