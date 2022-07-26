@@ -29,6 +29,13 @@ def load_data_fromH5(path, smooth=True, only_finest=False):
     return shape_list
 
 
+def save_h5_single(save_path, shape, n_scales):
+    fp = h5py.File(save_path, 'w')
+    fp.attrs['n_scales'] = n_scales
+    fp.create_dataset(f'scale{n_scales - 1}', data=shape, compression=9)
+    fp.close()
+
+
 def voxelGrid2mesh(shape, laplacian=0, color=None):
     shape = np.pad(shape, 1)
     vertices, faces = marching_cubes(shape, 0.5)

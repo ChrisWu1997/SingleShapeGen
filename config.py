@@ -5,11 +5,10 @@ import shutil
 
 
 class Config(object):
-    def __init__(self, phase):
-        self.is_train = phase == "train"
-
+    def __init__(self):
         # init hyperparameters and parse from command-line
         parser, args = self.parse()
+        self.is_train = args.subcommand == "train"
 
         # set as attributes
         print("----Experiment Configuration-----")
@@ -39,7 +38,7 @@ class Config(object):
             return
 
         # re-mkdir if re-training
-        if phase == "train" and args.ckpt is None and os.path.exists(self.exp_dir):
+        if self.is_train and args.ckpt is None and os.path.exists(self.exp_dir):
             response = input('Experiment log/model already exists, overwrite? (y/n) ')
             if response != 'y':
                 exit()
@@ -58,37 +57,39 @@ class Config(object):
     def parse(self):
         """initiaize argument parser. Define default hyperparameters and collect from command-line arguments."""
         parser = argparse.ArgumentParser()
-        
-        # basic configuration
-        self._add_basic_config_(parser)
 
-        if self.is_train:
-            # dataset configuration
-            self._add_dataset_config_(parser)
-            # model configuration
-            self._add_network_config_(parser)
-            # training or testing configuration
-            self._add_training_config_(parser)
-        else:
-            self._add_testing_config_(parser)
+        # option for train or test mode
+        subparsers = parser.add_subparsers(dest='subcommand', required=True)
+
+        # subparser for train
+        parser_train = subparsers.add_parser('train')
+        self._add_basic_config(parser_train)
+        self._add_data_config(parser_train)
+        self._add_network_config(parser_train)
+        self._add_training_config(parser_train)
+
+        # subparser for test
+        parser_test = subparsers.add_parser('test')
+        self._add_basic_config(parser_test)
+        self._add_testing_config(parser_test)
 
         args = parser.parse_args()
         return parser, args
 
-    def _add_basic_config_(self, parser):
-        """add general hyperparameters"""
+    def _add_basic_config(self, parser):
+        """general arguments"""
         group = parser.add_argument_group('basic')
         group.add_argument('--proj_dir', type=str, default="checkpoints", help="a folder where models and logs will be saved")
         group.add_argument('--tag', type=str, required=True, help="name of this experiment")
         group.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
 
-    def _add_dataset_config_(self, parser):
-        """add hyperparameters for dataset configuration"""
+    def _add_data_config(self, parser):
+        """data arguments"""
         group = parser.add_argument_group('data')
         group.add_argument('-s', '--src_path', type=str, help='source data path', default=None)
 
-    def _add_network_config_(self, parser):
-        """add hyperparameters for network architecture"""
+    def _add_network_config(self, parser):
+        """network hyperparameters"""
         group = parser.add_argument_group('network')
         group.add_argument("--D_nc", type=int, default=32, help="number of conv channels for discriminator")
         group.add_argument("--D_layers", type=int, default=3, help="number of conv layers for discriminator")
@@ -104,7 +105,7 @@ class Config(object):
         group.add_argument('--no_norm', dest='use_norm', action='store_false', help='disable normalization layer')
         group.set_defaults(use_norm=True) # FIXME: simpler option for python > 3.9
 
-    def _add_training_config_(self, parser):
+    def _add_training_config(self, parser):
         """training configuration"""
         group = parser.add_argument_group('training')
         group.add_argument('--ckpt', type=int, default=None, help="restore checkpoint at scale x")
@@ -122,7 +123,7 @@ class Config(object):
         group.add_argument('--train_depth',type=int, default=1, help='number of concurrent training depth')
         group.add_argument('--lr_sigma',type=float,default=0.1, help='learning rate scaling for lower scale when train_depth > 1')
 
-    def _add_testing_config_(self, parser):
+    def _add_testing_config(self, parser):
         """testing configuration"""
         group = parser.add_argument_group('testing')
         group.add_argument('--ckpt', type=int, default=None, help="use checkpoint at scale x. By default, use the highest scale.")
