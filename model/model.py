@@ -1,4 +1,5 @@
 import os
+from abc import abstractmethod, ABC
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -10,7 +11,7 @@ from .networks import get_network
 from .model_utils import calc_gradient_penalty, set_require_grads, generate_tri_plane_noise, slice_volume_along_xyz, make_coord, TrainClock
 
 
-class SSGmodel(object):
+class SSGmodelBase(ABC):
     def __init__(self, config):
         self.log_dir = config.log_dir
         self.model_dir = config.model_dir
@@ -26,22 +27,17 @@ class SSGmodel(object):
         self.real_sizes = [] # real data spatial dimensions
 
         self.device = torch.device('cuda:0')
-
-    def _set_optimizer(self, config):
-        """set optimizer used in training"""
-        self.optimizerD = optim.Adam(self.netD.parameters(), lr=config.lr_d, betas=(config.beta1, 0.999))
     
-        # set different learning rate for lower stages
-        parameter_list = [{"params": block.parameters(), "lr": config.lr_g * (config.lr_sigma ** (len(self.netG.body[-config.train_depth:]) - 1 - idx))}
-                for idx, block in enumerate(self.netG.body[-config.train_depth:])]
+    @abstractmethod
+    def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):
+        raise NotImplementedError
 
-        # add parameters of head and tail to training
-        depth = self.netG.n_scales - 1
-        if depth - config.train_depth < 0:
-            parameter_list += [{"params": self.netG.head_conv.parameters(), "lr": config.lr_g * (config.lr_sigma ** depth)}]
-        parameter_list += [{"params": self.netG.mlp.parameters(), "lr": config.lr_g}]
-        # print([x['lr'] for x in parameter_list])
-        self.optimizerG = optim.Adam(parameter_list, lr=config.lr_g, betas=(config.beta1, 0.999))
+    def _set_optimizer(self):
+        """set optimizer used in training"""
+        self.optimizerD = optim.Adam(self.netD.parameters(), lr=self.config.lr_d, betas=(self.config.beta1, 0.999))
+    
+        parameter_list = self._netG_trainable_params(self.config.lr_g, self.config.lr_sigma, self.config.train_depth)
+        self.optimizerG = optim.Adam(parameter_list, lr=self.config.lr_g, betas=(self.config.beta1, 0.999))
     
     def _set_tbwriter(self):
         path = os.path.join(self.log_dir, 'train_s{}.events'.format(self.scale))
@@ -88,35 +84,16 @@ class SSGmodel(object):
         self.netG.cuda()
         self.netD.cuda()
 
-        self._set_optimizer(self.config)
+        self._set_optimizer()
         self.optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])
         self.optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
         self.clock.restore_checkpoint(checkpoint['clock'])
 
         self.scale = n_scale
 
+    @abstractmethod
     def _draw_fake_in_training(self, mode):
-        init_noise = self.draw_init_noise(mode)
-        real_sizes = self.real_sizes[:self.scale + 1]
-        noises_list = self.draw_noises_list(mode, self.scale)
-
-        if self.scale < self.train_depth:
-            fake = self.netG(init_noise, real_sizes, noises_list, mode)
-        else:
-            # NOTE: get features from non-trainable scales under torch.no_grad(), seems to be quicker
-            prev_depth = self.scale - self.train_depth
-            if mode == 'rec' and self.prev_opt_feats is not None:
-                prev_feats = self.prev_opt_feats
-            else:
-                with torch.no_grad():
-                    prev_feats = self.netG.draw_feats(init_noise, 
-                        real_sizes[:prev_depth + 1], noises_list[:prev_depth + 1], mode, prev_depth + 1)
-                prev_feats = [x.detach() for x in prev_feats]
-                if mode == 'rec' and self.prev_opt_feats is None:
-                    self.prev_opt_feats = prev_feats
-            fake = self.netG.decode_feats(prev_feats, real_sizes[prev_depth + 1:], noises_list[prev_depth + 1:], 
-                    mode, prev_depth + 1, -1)
-        return fake
+        raise NotImplementedError
 
     def _critic_wgan_iteration(self, real_data):
         # require grads
@@ -253,7 +230,7 @@ class SSGmodel(object):
             self.netG.cuda()
             assert self.netG.n_scales == s + 1
 
-            self._set_optimizer(self.config)
+            self._set_optimizer()
             self._set_tbwriter()
             self.clock.reset()
             
@@ -289,6 +266,71 @@ class SSGmodel(object):
             noise_amp = self.config.base_noise_amp if s > 0 else 1.0
         return noise_amp
 
+    @abstractmethod
+    def draw_init_noise(self, mode, resize_factor=(1.0, 1.0, 1.0)):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
+        raise NotImplementedError
+
+    def _visualize_in_training(self, real_data):
+        if self.clock.step == 0:
+            real_data_ = real_data.detach().cpu().numpy()[0, 0]
+            self.train_tb.add_image('real', slice_volume_along_xyz(real_data_), self.clock.step, dataformats='HW')
+            # self.train_tb.add_figure('real', draw_mat_figure_along_xyz(real_data_), self.clock.step)
+
+        with torch.no_grad():
+            fake1_ = self.generate('rand', self.scale)
+            rec_ = self.generate('rec', self.scale)
+
+        fake1_ = fake1_.detach().cpu().numpy()[0, 0]
+        self.train_tb.add_image('fake1', slice_volume_along_xyz(fake1_), self.clock.step, dataformats='HW')
+        # self.train_tb.add_figure('fake1', draw_mat_figure_along_xyz(fake1_), self.clock.step)
+        rec_ = rec_.detach().cpu().numpy()[0, 0]
+        self.train_tb.add_image('rec', slice_volume_along_xyz(rec_), self.clock.step, dataformats='HW')
+        # self.train_tb.add_figure('rec', draw_mat_figure_along_xyz(rec_), self.clock.step)
+
+
+class SSGmodelTP(SSGmodelBase):
+    def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):
+        # set different learning rate for lower stages
+        parameter_list = [{"params": block.parameters(), "lr": lr_g * (lr_sigma ** (len(self.netG.body[-train_depth:]) - 1 - idx))}
+                for idx, block in enumerate(self.netG.body[-train_depth:])]
+        # add parameters of head and tail to training
+        depth = self.netG.n_scales - 1
+        if depth - train_depth < 0:
+            parameter_list += [{"params": self.netG.head_conv.parameters(), "lr": lr_g * (lr_sigma ** depth)}]
+        parameter_list += [{"params": self.netG.mlp.parameters(), "lr": lr_g}]
+        return parameter_list
+    
+    def _draw_fake_in_training(self, mode):
+        init_noise = self.draw_init_noise(mode)
+        real_sizes = self.real_sizes[:self.scale + 1]
+        noises_list = self.draw_noises_list(mode, self.scale)
+
+        if self.scale < self.train_depth:
+            fake = self.netG(init_noise, real_sizes, noises_list, mode)
+        else:
+            # NOTE: get features from non-trainable scales under torch.no_grad(), seems to be quicker
+            prev_depth = self.scale - self.train_depth
+            if mode == 'rec' and self.prev_opt_feats is not None:
+                prev_feats = self.prev_opt_feats
+            else:
+                with torch.no_grad():
+                    prev_feats = self.netG.draw_feats(init_noise, 
+                        real_sizes[:prev_depth + 1], noises_list[:prev_depth + 1], mode, prev_depth + 1)
+                prev_feats = [x.detach() for x in prev_feats]
+                if mode == 'rec' and self.prev_opt_feats is None:
+                    self.prev_opt_feats = prev_feats
+            fake = self.netG.decode_feats(prev_feats, real_sizes[prev_depth + 1:], noises_list[prev_depth + 1:], 
+                    mode, prev_depth + 1, -1)
+        return fake
+
     def draw_init_noise(self, mode, resize_factor=(1.0, 1.0, 1.0)):
         if mode == 'rec':
             return self.noiseOpt_init
@@ -297,7 +339,7 @@ class SSGmodel(object):
                 init_size = [round(self.real_sizes[i] * resize_factor[i]) for i in range(3)]
                 return torch.randn(*init_size, device=self.device)
             return torch.randn_like(self.noiseOpt_init)
-    
+
     def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
         if scale is None:
             scale = self.scale
@@ -329,20 +371,3 @@ class SSGmodel(object):
             coords = make_coord(*query_shape, self.device)
         out = self.netG(init_noise, real_sizes, noises_list, mode, coords, return_each=return_each)
         return out
-
-    def _visualize_in_training(self, real_data):
-        if self.clock.step == 0:
-            real_data_ = real_data.detach().cpu().numpy()[0, 0]
-            self.train_tb.add_image('real', slice_volume_along_xyz(real_data_), self.clock.step, dataformats='HW')
-            # self.train_tb.add_figure('real', draw_mat_figure_along_xyz(real_data_), self.clock.step)
-
-        with torch.no_grad():
-            fake1_ = self.generate('rand', self.scale)
-            rec_ = self.generate('rec', self.scale)
-
-        fake1_ = fake1_.detach().cpu().numpy()[0, 0]
-        self.train_tb.add_image('fake1', slice_volume_along_xyz(fake1_), self.clock.step, dataformats='HW')
-        # self.train_tb.add_figure('fake1', draw_mat_figure_along_xyz(fake1_), self.clock.step)
-        rec_ = rec_.detach().cpu().numpy()[0, 0]
-        self.train_tb.add_image('rec', slice_volume_along_xyz(rec_), self.clock.step, dataformats='HW')
-        # self.train_tb.add_figure('rec', draw_mat_figure_along_xyz(rec_), self.clock.step)

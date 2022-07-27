@@ -3,7 +3,7 @@ import time
 import torch
 from tqdm import tqdm
 from config import Config
-from model import SSGmodel
+from model import get_model
 from utils.data_utils import load_data_fromH5, save_h5_single
 
 
@@ -12,7 +12,7 @@ def main():
     cfg = Config()
 
     # create model
-    ssg_model = SSGmodel(cfg)
+    ssg_model = get_model(cfg)
 
     if cfg.is_train:
         # restore from checkpoint if provided
@@ -41,7 +41,7 @@ def main():
             raise NotImplementedError
 
 
-def generate(cfg, ssg_model: SSGmodel):
+def generate(cfg, ssg_model):
     """random generation or reconstruction"""
     out_name = f"{cfg.mode}_n{cfg.n_samples}"
     if cfg.bin:
@@ -64,7 +64,7 @@ def generate(cfg, ssg_model: SSGmodel):
         save_h5_single(save_path, fake_, ssg_model.scale + 1)
 
 
-def interpolate(cfg, ssg_model: SSGmodel):
+def interpolate(cfg, ssg_model):
     """interpolation and extrapolation. No resize, no upsample."""
     out_name = f"interp_n{cfg.n_samples}"
     if cfg.bin:

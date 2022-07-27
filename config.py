@@ -92,6 +92,7 @@ class Config(object):
     def _add_network_config(self, parser):
         """network hyperparameters"""
         group = parser.add_argument_group('network')
+        group.add_argument('--G_struct', type=str, default="triplane", choices=["triplane", "conv3d"], help='generator structure')
         group.add_argument("--D_nc", type=int, default=32, help="number of conv channels for discriminator")
         group.add_argument("--D_layers", type=int, default=3, help="number of conv layers for discriminator")
         group.add_argument("--G_nc", type=int, default=32, help="number of conv channels for generator")
