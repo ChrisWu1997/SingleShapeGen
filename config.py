@@ -8,7 +8,7 @@ class Config(object):
     def __init__(self):
         # init hyperparameters and parse from command-line
         parser, args = self.parse()
-        self.is_train = args.subcommand == "train"
+        self.is_train = args.phase == "train"
 
         # set as attributes
         print("----Experiment Configuration-----")
@@ -27,7 +27,8 @@ class Config(object):
 
         # load saved config if not training
         if not self.is_train:
-            assert os.path.exists(self.exp_dir)
+            if not os.path.exists(self.exp_dir):
+                raise RuntimeError(f"Experiment checkpoint {self.exp_dir} not exists.")
             config_path = os.path.join(self.exp_dir, 'config.json')
             print(f"Load saved config from {config_path}")
             with open(config_path, 'r') as f:
@@ -59,7 +60,7 @@ class Config(object):
         parser = argparse.ArgumentParser()
 
         # option for train or test mode
-        subparsers = parser.add_subparsers(dest='subcommand', required=True)
+        subparsers = parser.add_subparsers(dest='phase', required=True)
 
         # subparser for train
         parser_train = subparsers.add_parser('train')

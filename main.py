@@ -1,6 +1,7 @@
 import os
 import time
 import torch
+from tqdm import tqdm
 from config import Config
 from model import SSGmodel
 from utils.data_utils import load_data_fromH5, save_h5_single
@@ -50,13 +51,11 @@ def generate(cfg, ssg_model: SSGmodel):
     out_name += f"_r{cfg.resize[0]}x{cfg.resize[1]}x{cfg.resize[2]}"    
     save_dir = os.path.join(cfg.exp_dir, out_name)
     os.makedirs(save_dir, exist_ok=True)
+    print(f"Results will be saved at {save_dir}.")
 
-    for i in range(cfg.n_samples):
-        since = time.time()
+    for i in tqdm(range(cfg.n_samples), desc="Generation"):
         with torch.no_grad():
             fake_ = ssg_model.generate(cfg.mode, resize_factor=cfg.resize, upsample=cfg.upsample)
-        end = time.time()
-        print(f"{i}. time:{end - since}.")
         fake_ = fake_.detach().cpu().numpy()[0, 0]
         if cfg.bin:
             fake_ = fake_ > 0.5
@@ -72,25 +71,22 @@ def interpolate(cfg, ssg_model: SSGmodel):
         out_name += "_bin"
     out_dir = os.path.join(cfg.exp_dir, out_name)
     os.makedirs(out_dir, exist_ok=True)
+    print(f"Results will be saved at {out_dir}.")
 
     # NOTE: hard-coded blending weights    
     alpha_list = [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
 
     mode = 'rand'
-    for k in range(cfg.n_samples):
+    for k in tqdm(range(cfg.n_samples), desc="Inter(extra)-polation"):
         init_noise1 = ssg_model.draw_init_noise(mode)
         init_noise2 = ssg_model.draw_init_noise(mode)
         noises_list = ssg_model.draw_noises_list(mode)
 
         for i in range(len(alpha_list)):
-            since = time.time()
             alpha = alpha_list[i]
-            print("alpha=", alpha)
             init_noise = (1 - alpha) * init_noise1 + alpha * init_noise2
             with torch.no_grad():
                 fake_ = ssg_model.netG(init_noise, ssg_model.real_sizes, noises_list, mode)
-            end = time.time()
-            print(f"{i}. time:{end - since}.")
             fake_ = fake_.detach().cpu().numpy()[0, 0]
             if cfg.bin:
                 fake_ = fake_ > 0.5

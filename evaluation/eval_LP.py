@@ -80,17 +80,15 @@ def main():
     ref_data = load_data_fromH5(args.ref, smooth=False, only_finest=True)
     ref_data = torch.from_numpy(ref_data > 0.5).cuda()
     
-    print('ref shape size:', ref_data.shape)
     ref_patches = extract_valid_patches_unfold(ref_data, args.patch_size, args.stride)
     ref_patches = ref_patches
-    # print('ref_patches:', ref_patches.shape)
 
     # LP
     result_lp_iou_percent = []
     result_lp_fscore_percent = []
 
     filenames = sorted([x for x in os.listdir(args.src) if x.endswith('.h5')])
-    for name in tqdm(filenames):
+    for name in tqdm(filenames, desc="LP-IOU/F-score"):
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
         gen_data = torch.from_numpy(gen_data > 0.5).cuda()
@@ -114,11 +112,11 @@ def main():
                                 'LP-F-score': result_lp_fscore_percent})
 
     if args.output is None:
-        save_path = args.src + f'_eval_LP_p{args.patch_size}s{args.stride}n{args.patch_num}.txt'
+        save_path = args.src + f'_eval.txt'
     else:
         save_path = args.output
 
-    fp = open(save_path, 'w')
+    fp = open(save_path, 'a')
     for k, v in eval_results.items():
         print(f"{k}: {v}")
         print(f"{k}: {v}", file=fp)

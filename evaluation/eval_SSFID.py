@@ -107,13 +107,12 @@ def main():
     # load ref
     ref_data = load_data_fromH5(args.ref, smooth=False, only_finest=True)
     ref_data = torch.from_numpy(ref_data).float().cuda()
-    print('real:', ref_data.shape)
 
     mu_r, sigma_r = calculate_activation_statistics(ref_data, model, args.model_out_layer)
 
     filenames = sorted([x for x in os.listdir(args.src) if x.endswith('.h5')])
     ssfid_values = []
-    for name in tqdm(filenames):
+    for name in tqdm(filenames, desc="SSFID"):
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
         gen_data = torch.from_numpy(gen_data).float().cuda()
@@ -132,10 +131,10 @@ def main():
                                 'SSFID_std': ssfid_std,})
     
     if args.output is None:
-        save_path = args.src + f'_eval_SSFID_l{args.model_out_layer}.txt'
+        save_path = args.src + f'_eval.txt'
     else:
         save_path = args.output
-    fp = open(save_path, 'w')
+    fp = open(save_path, 'a')
     for k, v in eval_results.items():
         print(f"{k}: {v}")
         print(f"{k}: {v}", file=fp)

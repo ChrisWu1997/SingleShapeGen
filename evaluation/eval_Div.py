@@ -37,7 +37,7 @@ def main():
 
     gen_data_list = []
     filenames = sorted([x for x in os.listdir(args.src) if x.endswith('.h5')])
-    for name in tqdm(filenames):
+    for name in tqdm(filenames, desc="DIV"):
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
         gen_data = torch.from_numpy(gen_data > 0.5).cuda()
@@ -50,11 +50,11 @@ def main():
     eval_results = {'Div': div}
 
     if args.output is None:
-        save_path = args.src + f'_eval_Div.txt'
+        save_path = args.src + f'_eval.txt'
     else:
         save_path = args.output
 
-    fp = open(save_path, 'w')
+    fp = open(save_path, 'a')
     for k, v in eval_results.items():
         print(f"{k}: {v}")
         print(f"{k}: {v}", file=fp)

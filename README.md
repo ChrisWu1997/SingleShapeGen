@@ -73,7 +73,7 @@ Then run the evalution script to compute all metrics, e.g.,
 ```bash
 cd evaluation
 # ./eval.sh {generated-shapes-folder} {reference-shape} {gpu-ids}
-./eval.sh ../checkpoints/ssg_Acropolis_r128s6/rand_n100_bin_r1x1x1 ../data/Acropolisr128s6.h5 0
+./eval.sh ../checkpoints/ssg_Acropolis_r128s6/rand_n100_bin_r1x1x1 ../data/Acropolis_r128s6.h5 0
 ```
 See `evaluation` folder for evalution scripts for each individual metric.
 
