@@ -1,13 +1,18 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .blocks import ConvBlock, TriplaneConvs, make_mlp
+from .blocks import ConvBlock, TriplaneConvs, Convs3DSkipAdd, make_mlp
 
 
 def get_network(config, name):
     if name == 'G':
-        return GrowingGeneratorTriplane(config.G_nc, config.G_layers, config.pool_dim, 
-            config.feat_dim, config.use_norm, config.mlp_dim, config.mlp_layers)
+        if config.G_struct == "triplane":
+            return GrowingGeneratorTriplane(config.G_nc, config.G_layers, config.pool_dim, 
+                config.feat_dim, config.use_norm, config.mlp_dim, config.mlp_layers)
+        elif config.G_struct == "conv3d":
+            return GrowingGenerator3D(config.G_nc, config.G_layers, config.use_norm)
+        else:
+            raise NotImplementedError
     elif name == 'D':
         return WDiscriminator(config.D_nc, config.D_layers, config.use_norm)
     else:
@@ -185,11 +190,57 @@ class GrowingGeneratorTriplane(nn.Module):
         return out
 
 
+class GrowingGenerator3D(nn.Module):
+    def __init__(self, n_channels=32, n_layers=4, use_norm=True, pad_head=False):
+        super(GrowingGenerator3D, self).__init__()
+        self.nf = n_channels
+        self.n_conv_layers = n_layers
+        self.use_norm = use_norm
+        self.pad_len = 0 if pad_head else 1
+        
+        self.body = nn.ModuleList([])
+
+        self.pad_head = pad_head
+        if pad_head:
+            self.pad_block = nn.ZeroPad2d(self.n_conv_layers)
+
+    @property
+    def n_scales(self):
+        return len(self.body)
+
+    def init_next_scale(self):
+        model = Convs3DSkipAdd(self.nf, self.n_conv_layers, 3, 1, self.use_norm)
+        self.body.append(model)
+
+    def forward(self, inp, noises_list, start_scale=0, end_scale=-1, return_each=False):
+        out_list = []
+        out = inp
+        if end_scale == -1:
+            end_scale = len(self.body) - 1
+        if len(noises_list) != end_scale + 1 - start_scale:
+            raise RuntimeError
+
+        for i, block in enumerate(self.body[start_scale:end_scale + 1]):
+            if i + start_scale > 0:
+                out = F.interpolate(out, size=noises_list[i].shape[-3:], mode='trilinear', align_corners=True)
+            out = block(noises_list[i], out)
+
+            if return_each:
+                out_list.append(out)
+
+        if return_each:
+            return out_list
+
+        return out
+
+
 if __name__ == '__main__':
-    load_path = "/local/cg/rundi/workspace/ssg_code/project_log/vtpfmsV1_acropolisFm15_res128s6/model/scale5_latest.pth"
+    # load_path = "/local/cg/rundi/workspace/ssg_code/project_log/vtpfmsV1_acropolisFm15_res128s6/model/scale5_latest.pth"
+    load_path = "/local/cg/rundi/workspace/ssg_code/project_log/sin3dms_acropolisFm15_res128s6dep1/model/scale5_latest.pth"
     checkpoint = torch.load(load_path)
     
-    netG = GrowingGeneratorTriplane()
+    # netG = GrowingGeneratorTriplane()
+    netG = GrowingGenerator3D()
     n_scale = 6
     for s in range(n_scale):
         netG.init_next_stage()

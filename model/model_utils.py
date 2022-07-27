@@ -37,6 +37,14 @@ def generate_tri_plane_noise(res_x, res_y, res_z, nf, noise_amp, device):
     return noise
 
 
+def generate_3d_noise(res_x, res_y, res_z, mode, noise_amp, device):
+    if mode == 'rec':
+        noise = torch.zeros(1, 1, res_x, res_y, res_z, device=device)
+    else:
+        noise = (torch.randn(1, 1, res_x, res_y, res_z, device=device) * noise_amp).detach()
+    return noise
+
+
 def make_coord(H, W, D, device, normalize=True):
     """ Make coordinates at grid centers."""
     xs = torch.arange(H, device=device).float() 

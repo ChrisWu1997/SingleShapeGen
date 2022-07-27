@@ -1,10 +1,10 @@
-from .model import SSGmodelTP
+from .models import SSGmodelTriplane, SSGmodelConv3D
 
 
 def get_model(config):
     if config.G_struct == "triplane":
-        return SSGmodelTP(config)
+        return SSGmodelTriplane(config)
     elif config.G_struct == "conv3d":
-        pass
+        return SSGmodelConv3D(config)
     else:
         raise NotImplementedError

@@ -8,7 +8,7 @@ from collections import OrderedDict
 from tensorboardX import SummaryWriter
 import numpy as np
 from .networks import get_network
-from .model_utils import calc_gradient_penalty, set_require_grads, generate_tri_plane_noise, slice_volume_along_xyz, make_coord, TrainClock
+from .model_utils import calc_gradient_penalty, set_require_grads, slice_volume_along_xyz, TrainClock
 
 
 class SSGmodelBase(ABC):
@@ -32,6 +32,18 @@ class SSGmodelBase(ABC):
     def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):
         raise NotImplementedError
 
+    @abstractmethod
+    def _draw_fake_in_training(self, mode):
+        raise NotImplementedError
+
+    @abstractmethod
+    def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
+        raise NotImplementedError
+
     def _set_optimizer(self):
         """set optimizer used in training"""
         self.optimizerD = optim.Adam(self.netD.parameters(), lr=self.config.lr_d, betas=(self.config.beta1, 0.999))
@@ -50,6 +62,7 @@ class SSGmodelBase(ABC):
             # print("Saving checkpoint step {}...".format(self.clock.step))
         else:
             save_path = os.path.join(self.model_dir, "scale{}_{}.pth".format(self.scale, name))
+        print(f"Save checkpoint at {save_path}.")
 
         # noise_opt_list = [self.noiseOpt_list[-1].detach().cpu()] if self.scale == 0 else [x.detach().cpu() for x in self.noiseOpt_list[-1]]
         torch.save({
@@ -71,7 +84,7 @@ class SSGmodelBase(ABC):
         load_path = os.path.join(self.model_dir, "scale{}_latest.pth".format(n_scale))
         if not os.path.exists(load_path):
             raise ValueError("Checkpoint {} not exists.".format(load_path))
-        print("Loading checkpoint from {} ...".format(load_path))
+        print(f"Load checkpoint from {load_path}.")
         checkpoint = torch.load(load_path)
         
         self.noiseOpt_init = checkpoint['noiseOpt_init'].cuda()
@@ -90,10 +103,6 @@ class SSGmodelBase(ABC):
         self.clock.restore_checkpoint(checkpoint['clock'])
 
         self.scale = n_scale
-
-    @abstractmethod
-    def _draw_fake_in_training(self, mode):
-        raise NotImplementedError
 
     def _critic_wgan_iteration(self, real_data):
         # require grads
@@ -266,71 +275,6 @@ class SSGmodelBase(ABC):
             noise_amp = self.config.base_noise_amp if s > 0 else 1.0
         return noise_amp
 
-    @abstractmethod
-    def draw_init_noise(self, mode, resize_factor=(1.0, 1.0, 1.0)):
-        raise NotImplementedError
-    
-    @abstractmethod
-    def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
-        raise NotImplementedError
-    
-    @abstractmethod
-    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
-        raise NotImplementedError
-
-    def _visualize_in_training(self, real_data):
-        if self.clock.step == 0:
-            real_data_ = real_data.detach().cpu().numpy()[0, 0]
-            self.train_tb.add_image('real', slice_volume_along_xyz(real_data_), self.clock.step, dataformats='HW')
-            # self.train_tb.add_figure('real', draw_mat_figure_along_xyz(real_data_), self.clock.step)
-
-        with torch.no_grad():
-            fake1_ = self.generate('rand', self.scale)
-            rec_ = self.generate('rec', self.scale)
-
-        fake1_ = fake1_.detach().cpu().numpy()[0, 0]
-        self.train_tb.add_image('fake1', slice_volume_along_xyz(fake1_), self.clock.step, dataformats='HW')
-        # self.train_tb.add_figure('fake1', draw_mat_figure_along_xyz(fake1_), self.clock.step)
-        rec_ = rec_.detach().cpu().numpy()[0, 0]
-        self.train_tb.add_image('rec', slice_volume_along_xyz(rec_), self.clock.step, dataformats='HW')
-        # self.train_tb.add_figure('rec', draw_mat_figure_along_xyz(rec_), self.clock.step)
-
-
-class SSGmodelTP(SSGmodelBase):
-    def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):
-        # set different learning rate for lower stages
-        parameter_list = [{"params": block.parameters(), "lr": lr_g * (lr_sigma ** (len(self.netG.body[-train_depth:]) - 1 - idx))}
-                for idx, block in enumerate(self.netG.body[-train_depth:])]
-        # add parameters of head and tail to training
-        depth = self.netG.n_scales - 1
-        if depth - train_depth < 0:
-            parameter_list += [{"params": self.netG.head_conv.parameters(), "lr": lr_g * (lr_sigma ** depth)}]
-        parameter_list += [{"params": self.netG.mlp.parameters(), "lr": lr_g}]
-        return parameter_list
-    
-    def _draw_fake_in_training(self, mode):
-        init_noise = self.draw_init_noise(mode)
-        real_sizes = self.real_sizes[:self.scale + 1]
-        noises_list = self.draw_noises_list(mode, self.scale)
-
-        if self.scale < self.train_depth:
-            fake = self.netG(init_noise, real_sizes, noises_list, mode)
-        else:
-            # NOTE: get features from non-trainable scales under torch.no_grad(), seems to be quicker
-            prev_depth = self.scale - self.train_depth
-            if mode == 'rec' and self.prev_opt_feats is not None:
-                prev_feats = self.prev_opt_feats
-            else:
-                with torch.no_grad():
-                    prev_feats = self.netG.draw_feats(init_noise, 
-                        real_sizes[:prev_depth + 1], noises_list[:prev_depth + 1], mode, prev_depth + 1)
-                prev_feats = [x.detach() for x in prev_feats]
-                if mode == 'rec' and self.prev_opt_feats is None:
-                    self.prev_opt_feats = prev_feats
-            fake = self.netG.decode_feats(prev_feats, real_sizes[prev_depth + 1:], noises_list[prev_depth + 1:], 
-                    mode, prev_depth + 1, -1)
-        return fake
-
     def draw_init_noise(self, mode, resize_factor=(1.0, 1.0, 1.0)):
         if mode == 'rec':
             return self.noiseOpt_init
@@ -339,35 +283,17 @@ class SSGmodelTP(SSGmodelBase):
                 init_size = [round(self.real_sizes[i] * resize_factor[i]) for i in range(3)]
                 return torch.randn(*init_size, device=self.device)
             return torch.randn_like(self.noiseOpt_init)
-
-    def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
-        if scale is None:
-            scale = self.scale
-        noises_list = [] # first scale no additive noise
-        for i in range(scale + 1):
-            if i == 0:
-                noises_list.append(None)
-            else:
-                if mode == 'rec':
-                    noises_list.append([0, 0, 0])
-                else:
-                    noise_shape = self.real_sizes[i]
-                    if resize_factor[0] != 1.0 or resize_factor[1] != 1.0 or resize_factor[2] != 1.0:
-                        noise_shape = [round(noise_shape[j] * resize_factor[j]) for j in range(3)]
-                    tri_noise = generate_tri_plane_noise(*noise_shape, self.config.feat_dim, self.noiseAmp_list[i], self.device)
-                    noises_list.append(tri_noise)
-        return noises_list
     
-    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
-        if scale is None:
-            scale = self.scale
-        init_noise = self.draw_init_noise(mode, resize_factor)
-        real_sizes = [[round(x[i] * resize_factor[i]) for i in range(3)] for x in self.real_sizes[:scale + 1]]
-        noises_list = self.draw_noises_list(mode, scale, resize_factor)
+    def _visualize_in_training(self, real_data):
+        if self.clock.step == 0:
+            real_data_ = real_data.detach().cpu().numpy()[0, 0]
+            self.train_tb.add_image('real', slice_volume_along_xyz(real_data_), self.clock.step, dataformats='HW')
 
-        coords = None
-        if upsample > 1:
-            query_shape = [round(x * upsample) for x in real_sizes[-1]]
-            coords = make_coord(*query_shape, self.device)
-        out = self.netG(init_noise, real_sizes, noises_list, mode, coords, return_each=return_each)
-        return out
+        with torch.no_grad():
+            fake1_ = self.generate('rand', self.scale)
+            rec_ = self.generate('rec', self.scale)
+
+        fake1_ = fake1_.detach().cpu().numpy()[0, 0]
+        self.train_tb.add_image('fake1', slice_volume_along_xyz(fake1_), self.clock.step, dataformats='HW')
+        rec_ = rec_.detach().cpu().numpy()[0, 0]
+        self.train_tb.add_image('rec', slice_volume_along_xyz(rec_), self.clock.step, dataformats='HW')

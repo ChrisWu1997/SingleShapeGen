@@ -100,6 +100,44 @@ class TriplaneConvs(nn.Module):
         return yz_feat, xz_feat, xy_feat
 
 
+class Convs3DSkipAdd(nn.Module):
+    def __init__(self, n_channels=32, n_layers=4, ker_size=3, stride=1, use_norm=True, pad_head=False):
+        super(Convs3DSkipAdd, self).__init__()
+        pad_len = 0 if pad_head else 1
+        self.pad_head = pad_head
+
+        self.head = ConvBlock(1, n_channels, ker_size, stride, pad_len, use_norm) #GenConvTransBlock(opt.nc_z,N,opt.ker_size,opt.padd_size,opt.stride)
+        self.body = nn.Sequential()
+        for i in range(n_layers - 2):
+            block = ConvBlock(n_channels, n_channels, ker_size, stride, pad_len, use_norm)
+            self.body.add_module('block%d' % (i + 1), block)
+        self.tail = nn.Sequential(
+            nn.Conv3d(n_channels, 1, kernel_size=ker_size, stride=stride, padding=pad_len),
+            nn.Tanh()
+        )
+
+        if pad_head:
+            pad_noise = int(((3 - 1) * n_layers) / 2)
+            pad_image = int(((3 - 1) * n_layers) / 2)
+            self.m_noise = nn.ConstantPad3d(int(pad_noise), 0)
+            self.m_image = nn.ConstantPad3d(int(pad_image), 0)
+
+    def forward(self, noise, inp):
+        if self.pad_head:
+            x = self.m_noise(noise)
+            y_ = self.m_image(inp)
+        else:
+            x = noise
+            y_ = inp
+
+        x = self.head(x + y_)
+        x = self.body(x)
+        x = self.tail(x)
+        out = x + inp
+        out = torch.max(torch.min(out, out*0.002+0.998), out*0.002)
+        return out
+
+
 def make_mlp(in_features,
              out_features,
              hidden_features,
