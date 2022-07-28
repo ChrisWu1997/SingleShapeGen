@@ -1,20 +1,23 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class ConvBlock(nn.Sequential):
+    def __init__(self, in_channels: int, out_channels: int, ker_size: int, stride: int, padd: int,
+                use_norm=True, sdim='3d', padd_mode='zeros', onlyconv=False):
+        """Basic Conv-IN-LReLU block.
 
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 ker_size,
-                 stride,
-                 padd,
-                 use_norm=True,
-                 sdim='3d',
-                 padd_mode='zeros',
-                 onlyconv=False):
+        Args:
+            in_channels (int): number of input channels
+            out_channels (int): number of output channels
+            ker_size (int): kernel size
+            stride (int): stride
+            padd (int): padding size
+            use_norm (bool, optional): use normalization layer. Defaults to True.
+            sdim (str, optional): spatial dimension (3d or 2d). Defaults to '3d'.
+            padd_mode (str, optional): padding mode. Defaults to 'zeros'.
+            onlyconv (bool, optional): keep only convolution layer. Defaults to False.
+        """
         super(ConvBlock, self).__init__()
         if sdim == '3d':
             self.add_module(
@@ -54,14 +57,17 @@ class ConvBlock(nn.Sequential):
 
 
 class TriplaneConvs(nn.Module):
+    def __init__(self, in_channels: int, out_channels_list: list, ker_size=3, stride=1, padd=0, use_norm=True):
+        """Triplane convolution block.
 
-    def __init__(self,
-                 in_channels,
-                 out_channels_list,
-                 ker_size=3,
-                 stride=1,
-                 padd=0,
-                 use_norm=True):
+        Args:
+            in_channels (int): number of input channels.
+            out_channels_list (list): a list of output channel numbers for each layer.
+            ker_size (int, optional): kernel size. Defaults to 3.
+            stride (int, optional): stride. Defaults to 1.
+            padd (int, optional): padding size. Defaults to 0.
+            use_norm (bool, optional): use normalization layer. Defaults to True.
+        """
         super(TriplaneConvs, self).__init__()
         if type(out_channels_list) is int:
             in_c = in_channels
@@ -102,6 +108,16 @@ class TriplaneConvs(nn.Module):
 
 class Convs3DSkipAdd(nn.Module):
     def __init__(self, n_channels=32, n_layers=4, ker_size=3, stride=1, use_norm=True, pad_head=False):
+        """A sequence of 3D convolutions with skip connection.
+
+        Args:
+            n_channels (int, optional): number of channels. Defaults to 32.
+            n_layers (int, optional): number of layers. Defaults to 4.
+            ker_size (int, optional): kernel size. Defaults to 3.
+            stride (int, optional): stride. Defaults to 1.
+            use_norm (bool, optional): use normalization layer. Defaults to True.
+            pad_head (bool, optional): make zero padding at head. Defaults to False.
+        """
         super(Convs3DSkipAdd, self).__init__()
         pad_len = 0 if pad_head else 1
         self.pad_head = pad_head
@@ -138,19 +154,22 @@ class Convs3DSkipAdd(nn.Module):
         return out
 
 
-def make_mlp(in_features,
-             out_features,
-             hidden_features,
-             n_hidden_layers,
-             act=nn.ReLU(inplace=True)):
+def make_mlp(in_features: int, out_features: int, hidden_features: int, n_hidden_layers: int, 
+            act=nn.ReLU(inplace=True)):
+    """Make a MLP.
+
+    Args:
+        in_features (int): number of input features.
+        out_features (int): number of output features.
+        hidden_features (int): number of hidden layer features.
+        n_hidden_layers (int): number of hidden layers.
+        act (nn.Module, optional): activation function. Defaults to nn.ReLU(inplace=True).
+
+    Returns:
+        MLP (nn.Module)
+    """
     layer_list = [nn.Linear(in_features, hidden_features), act]
     for i in range(n_hidden_layers):
         layer_list.extend([nn.Linear(hidden_features, hidden_features), act])
     layer_list.extend([nn.Linear(hidden_features, out_features)])
     return nn.Sequential(*layer_list)
-
-
-if __name__ == '__main__':
-
-    mlp2 = make_mlp(32, 1, 32, 1)
-    print(mlp2)

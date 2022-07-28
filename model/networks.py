@@ -5,7 +5,16 @@ from .blocks import ConvBlock, TriplaneConvs, Convs3DSkipAdd, make_mlp
 
 
 def get_network(config, name):
-    if name == 'G':
+    """get specificed network
+
+    Args:
+        config (Config): a config object
+        name (str): "G" for generator, "D" for discriminator
+
+    Returns:
+        network (nn.Module)
+    """
+    if name == "G":
         if config.G_struct == "triplane":
             return GrowingGeneratorTriplane(config.G_nc, config.G_layers, config.pool_dim, 
                 config.feat_dim, config.use_norm, config.mlp_dim, config.mlp_layers)
@@ -13,7 +22,7 @@ def get_network(config, name):
             return GrowingGenerator3D(config.G_nc, config.G_layers, config.use_norm)
         else:
             raise NotImplementedError
-    elif name == 'D':
+    elif name == "D":
         return WDiscriminator(config.D_nc, config.D_layers, config.use_norm)
     else:
         raise NotImplementedError
@@ -21,6 +30,14 @@ def get_network(config, name):
 
 class WDiscriminator(nn.Module):
     def __init__(self, n_channels=32, n_layers=3, use_norm=True):
+        """A 3D convolutional discriminator. 
+            Each layer's kernel size, stride and padding size are fixed.
+
+        Args:
+            n_channels (int, optional): number of channels for each layer. Defaults to 32.
+            n_layers (int, optional): number of conv layers. Defaults to 3.
+            use_norm (bool, optional): use normalization layer. Defaults to True.
+        """
         super(WDiscriminator, self).__init__()
         ker_size, stride, pad = 3, 2, 1 # hard-coded
         self.head = ConvBlock(1, n_channels, ker_size, stride, pad, use_norm, sdim='3d')
@@ -43,6 +60,17 @@ class WDiscriminator(nn.Module):
 
 class GrowingGeneratorTriplane(nn.Module):
     def __init__(self, n_channels=32, n_layers=4, pool_dim=8, feat_dim=32, use_norm=True, mlp_dim=32, mlp_layers=0):
+        """A multi-scale generator on tri-plane representation.
+
+        Args:
+            n_channels (int, optional): number of channels. Defaults to 32.
+            n_layers (int, optional): number of conv layers. Defaults to 4.
+            pool_dim (int, optional): average pooling dimension at head. Defaults to 8.
+            feat_dim (int, optional): tri-plane feature dimension. Defaults to 32.
+            use_norm (bool, optional): use normalization layer. Defaults to True.
+            mlp_dim (int, optional): mlp hidden layer feature dimension. Defaults to 32.
+            mlp_layers (int, optional): number of mlp hidden layers. Defaults to 0.
+        """
         super(GrowingGeneratorTriplane, self).__init__()
         self.n_channels = n_channels
         self.n_layers = n_layers
@@ -52,27 +80,27 @@ class GrowingGeneratorTriplane(nn.Module):
         
         # 1x1 conv
         self.head_conv = TriplaneConvs(self.pool_dim, self.feat_dim, 1, 1, 0, False)
-        
         self.body = nn.ModuleList([])
-        
         self.mlp = make_mlp(feat_dim * 3, 1, mlp_dim, mlp_layers) # TODO: add option for feature sum
 
     @property
     def n_scales(self):
+        """current number of scales"""
         return len(self.body)
 
     def init_next_scale(self):
+        """initialize next scale, i.e., append a conv block"""
         out_c_list = [self.n_channels] * (self.n_layers - 1) + [self.feat_dim]
         ker_size, stride, pad = 3, 1, 1 # hard-coded
         model = TriplaneConvs(self.feat_dim, out_c_list, ker_size, stride, pad, self.use_norm)
         self.body.append(model)
     
-    def query(self, tri_feats, coords=None):
-        """_summary_
+    def query(self, tri_feats: list, coords=None):
+        """construct output volume through point quries.
 
         Args:
-            tri_feats (_type_): [yz_feat, xz_feat, xy_feat]
-            coords (_type_, optional): (..., 3)
+            tri_feats (list): tri-plane feature maps, [yz_feat, xz_feat, xy_feat]
+            coords (tensor, optional): query points of shape (H, W, D, 3). If None, use the size of tri_feats.
         """
         yz_feat, xz_feat, xy_feat = tri_feats
         in_shape = [*xy_feat.shape[-2:], yz_feat.shape[-1]]
@@ -112,8 +140,8 @@ class GrowingGeneratorTriplane(nn.Module):
         return out
     
     def forward_head(self, init_noise):
+        """forward through the projection module at head."""
         ni = init_noise
-
         # extract triplane features at head
         in_shape = ni.shape[-3:]
         yz_feat = F.adaptive_avg_pool3d(ni, (self.pool_dim, in_shape[1], in_shape[2])).squeeze(1)
@@ -122,7 +150,21 @@ class GrowingGeneratorTriplane(nn.Module):
         yz_feat, xz_feat, xy_feat = self.head_conv([yz_feat, xz_feat, xy_feat])
         return [yz_feat, xz_feat, xy_feat]
 
-    def forward_scale(self, tri_feats, i, up_size, tri_noises, mode, coords=None, decode=False):
+    def forward_scale(self, tri_feats: list, i: int, up_size: list, tri_noises: list, mode: str, coords=None, decode=False):
+        """forward through the generator block at scale i.
+
+        Args:
+            tri_feats (list): tri-plane feature maps
+            i (int): i-th scale 
+            up_size (list): upsampled size
+            tri_noises (list): tri-plane noise maps
+            mode (str): "rec" for ignoring noise
+            coords (tensor, optional): query point coordinates. Defaults to None.
+            decode (bool, optional): decode output volume. Defaults to False.
+
+        Returns:
+            output: if decode, generated shape volume; else, tri-plane feature maps.
+        """
         yz_feat, xz_feat, xy_feat = tri_feats
         if i > 0:
             # upsample
@@ -154,14 +196,17 @@ class GrowingGeneratorTriplane(nn.Module):
         out = self.query([yz_feat, xz_feat, xy_feat], coords)
         return out
 
-    def draw_feats(self, init_noise, real_sizes, noises_list, mode, end_scale):
+    def draw_feats(self, init_noise: list, real_sizes: list, noises_list: list, mode: str, end_scale: int):
+        """draw generated tri-plane feature maps at end_scale. To facilitate training."""
         tri_feats = self.forward_head(init_noise)
 
         for i in range(end_scale):
             tri_feats = self.forward_scale(tri_feats, i, real_sizes[i], noises_list[i], mode)
         return tri_feats
     
-    def decode_feats(self, tri_feats, real_sizes, noises_list, mode, start_scale, end_scale=-1):
+    def decode_feats(self, tri_feats: list, real_sizes: list, noises_list: list, mode: str, start_scale: int, end_scale=-1):
+        """pass tri-plane feature maps from start_scale to end_scale, and decode output volume. 
+            To facilitate training."""
         if end_scale == -1:
             end_scale = len(self.body)
         for i in range(end_scale - start_scale):
@@ -169,7 +214,21 @@ class GrowingGeneratorTriplane(nn.Module):
         out = self.query(tri_feats)
         return out
 
-    def forward(self, init_noise, real_sizes, noises_list, mode, coords=None, return_each=False, return_feat=False):
+    def forward(self, init_noise: torch.Tensor, real_sizes: list, noises_list: list, mode: str, coords=None, return_each=False, return_feat=False):
+        """forward through the model
+
+        Args:
+            init_noise (torch.Tensor): input 3D noise tensor
+            real_sizes (list): list of multi-scale shape sizes
+            noises_list (list): list of multi-scale tri-plane noises
+            mode (str): "rand" or "rec"
+            coords (torch.Tensor, optional): query point coordinates. Defaults to None.
+            return_each (bool, optional): return output at each scale. Defaults to False.
+            return_feat (bool, optional): return also feature maps. Defaults to False.
+
+        Returns:
+            output: 3D shape volume, or a list of 3D shape volume, or feature maps
+        """
         tri_feats = self.forward_head(init_noise)
 
         out_list = []
@@ -192,6 +251,14 @@ class GrowingGeneratorTriplane(nn.Module):
 
 class GrowingGenerator3D(nn.Module):
     def __init__(self, n_channels=32, n_layers=4, use_norm=True, pad_head=False):
+        """A multi-scale generator on tri-plane representation.
+
+        Args:
+            n_channels (int, optional): number of channels. Defaults to 32.
+            n_layers (int, optional): number of conv layers. Defaults to 4.
+            use_norm (bool, optional): use normalization layer. Defaults to True.
+            pad_head (bool, optional): make zero padding at head. Defaults to False.
+        """
         super(GrowingGenerator3D, self).__init__()
         self.nf = n_channels
         self.n_conv_layers = n_layers
@@ -200,19 +267,29 @@ class GrowingGenerator3D(nn.Module):
         
         self.body = nn.ModuleList([])
 
-        self.pad_head = pad_head
-        if pad_head:
-            self.pad_block = nn.ZeroPad2d(self.n_conv_layers)
-
     @property
     def n_scales(self):
+        """current number of scales"""
         return len(self.body)
 
     def init_next_scale(self):
+        """initialize next scale, i.e., append a conv block"""
         model = Convs3DSkipAdd(self.nf, self.n_conv_layers, 3, 1, self.use_norm)
         self.body.append(model)
 
-    def forward(self, inp, noises_list, start_scale=0, end_scale=-1, return_each=False):
+    def forward(self, inp: torch.Tensor, noises_list: list, start_scale=0, end_scale=-1, return_each=False):
+        """forward through the model
+
+        Args:
+            inp (torch.Tensor): input 3D volume
+            noises_list (list): list of 3D noise
+            start_scale (int, optional): start scale. Defaults to 0.
+            end_scale (int, optional): end scale. Defaults to -1.
+            return_each (bool, optional): return output at each scale. Defaults to False.
+
+        Returns:
+            output: a 3D shape volume, or a list of 3D shape volume
+        """
         out_list = []
         out = inp
         if end_scale == -1:
@@ -232,21 +309,3 @@ class GrowingGenerator3D(nn.Module):
             return out_list
 
         return out
-
-
-if __name__ == '__main__':
-    # load_path = "/local/cg/rundi/workspace/ssg_code/project_log/vtpfmsV1_acropolisFm15_res128s6/model/scale5_latest.pth"
-    load_path = "/local/cg/rundi/workspace/ssg_code/project_log/sin3dms_acropolisFm15_res128s6dep1/model/scale5_latest.pth"
-    checkpoint = torch.load(load_path)
-    
-    # netG = GrowingGeneratorTriplane()
-    netG = GrowingGenerator3D()
-    n_scale = 6
-    for s in range(n_scale):
-        netG.init_next_stage()
-    netG.load_state_dict(checkpoint['netG_state_dict'])
-    print(netG)
-
-    netD = WDiscriminator()
-    netD.load_state_dict(checkpoint['netD_state_dict'])
-    print(netD)
