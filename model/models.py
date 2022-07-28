@@ -70,6 +70,21 @@ class SSGmodelTriplane(SSGmodelBase):
         out = self.netG(init_noise, real_sizes, noises_list, mode, coords, return_each=return_each)
         return out
 
+    def interpolation(self, alpha_list):
+        mode = 'rand'
+        init_noise1 = self.draw_init_noise(mode)
+        init_noise2 = self.draw_init_noise(mode)
+        noises_list = self.draw_noises_list(mode)
+
+        out_list = []
+        with torch.no_grad():
+            for i in range(len(alpha_list)):
+                alpha = alpha_list[i]
+                init_noise = (1 - alpha) * init_noise1 + alpha * init_noise2
+                out = self.netG(init_noise, self.real_sizes, noises_list, mode)
+                out_list.append(out)
+        return out_list
+
 
 class SSGmodelConv3D(SSGmodelBase):
     def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):

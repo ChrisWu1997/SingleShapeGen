@@ -65,6 +65,7 @@ def generate(cfg, ssg_model):
 
 def interpolate(cfg, ssg_model):
     """interpolation and extrapolation. No resize, no upsample."""
+    assert hasattr(ssg_model, "interpolation")
     out_name = f"interp_n{cfg.n_samples}"
     if cfg.bin:
         out_name += "_bin"
@@ -75,24 +76,17 @@ def interpolate(cfg, ssg_model):
     # NOTE: hard-coded blending weights    
     alpha_list = [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
 
-    mode = 'rand'
     for k in tqdm(range(cfg.n_samples), desc="Inter(extra)-polation"):
-        init_noise1 = ssg_model.draw_init_noise(mode)
-        init_noise2 = ssg_model.draw_init_noise(mode)
-        noises_list = ssg_model.draw_noises_list(mode)
+        save_dir = os.path.join(out_dir, f'pair{k}')
+        os.makedirs(save_dir, exist_ok=True)
 
-        for i in range(len(alpha_list)):
-            alpha = alpha_list[i]
-            init_noise = (1 - alpha) * init_noise1 + alpha * init_noise2
-            with torch.no_grad():
-                fake_ = ssg_model.netG(init_noise, ssg_model.real_sizes, noises_list, mode)
+        fake_list = ssg_model.interpolation(alpha_list)
+        for i, fake_ in enumerate(fake_list):
             fake_ = fake_.detach().cpu().numpy()[0, 0]
             if cfg.bin:
                 fake_ = fake_ > 0.5
-            
-            save_dir = os.path.join(out_dir, f'pair{k}')
-            os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir, f"fake_{i:02d}_alpha{alpha}.h5")
+
+            save_path = os.path.join(save_dir, f"fake_{i:02d}_alpha{alpha_list[i]}.h5")
             save_h5_single(save_path, fake_, ssg_model.scale + 1)
 
 
