@@ -6,11 +6,11 @@ import shutil
 
 class Config(object):
     def __init__(self):
-        # init hyperparameters and parse from command-line
+        """a config holding all hyper-parameters"""
         parser, args = self.parse()
         self.is_train = args.phase == "train"
 
-        # set as attributes
+        # set command-line arguments as attributes
         print("----Experiment Configuration-----")
         for k, v in args.__dict__.items():
             print("{0:20}".format(k), v)
@@ -38,7 +38,7 @@ class Config(object):
                     self.__setattr__(k, v)
             return
 
-        # re-mkdir if re-training
+        # re-mkdir experiment directory if re-training
         if self.is_train and args.ckpt is None and os.path.exists(self.exp_dir):
             response = input('Experiment log/model already exists, overwrite? (y/n) ')
             if response != 'y':
@@ -51,12 +51,9 @@ class Config(object):
         if self.is_train:
             with open(os.path.join(self.exp_dir, 'config.json'), 'w') as f:
                 json.dump(args.__dict__, f, indent=2)
-            # copy_code_dir = os.path.join(self.exp_dir, "code") # FIXME: remove when release
-            # ensure_dirs(copy_code_dir)
-            # os.system("cp *.py {}".format(copy_code_dir))
 
     def parse(self):
-        """initiaize argument parser. Define default hyperparameters and collect from command-line arguments."""
+        """parse command-line arguments."""
         parser = argparse.ArgumentParser()
 
         # option for train or test mode
@@ -80,17 +77,17 @@ class Config(object):
     def _add_basic_config(self, parser):
         """general arguments"""
         group = parser.add_argument_group('basic')
-        group.add_argument('--proj_dir', type=str, default="checkpoints", help="a folder where models and logs will be saved")
-        group.add_argument('--tag', type=str, required=True, help="name of this experiment")
-        group.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
+        group.add_argument('--proj_dir', type=str, default="checkpoints", help="a folder where experiment logs will be saved")
+        group.add_argument('--tag', type=str, required=True, help="tag for this experiment run")
+        group.add_argument('-g', '--gpu_ids', type=str, default=0, help="which gpu to use, e.g. 0  0,1,2. CPU not supported.")
 
     def _add_data_config(self, parser):
-        """data arguments"""
+        """arguments for data"""
         group = parser.add_argument_group('data')
-        group.add_argument('-s', '--src_path', type=str, help='source data path', default=None)
+        group.add_argument('-s', '--src_path', type=str, default=None, help='path to reference data')
 
     def _add_network_config(self, parser):
-        """network hyperparameters"""
+        """arguments for network structure"""
         group = parser.add_argument_group('network')
         group.add_argument('--G_struct', type=str, default="triplane", choices=["triplane", "conv3d"], help='generator structure')
         group.add_argument("--D_nc", type=int, default=32, help="number of conv channels for discriminator")
@@ -101,24 +98,21 @@ class Config(object):
         group.add_argument("--mlp_layers", type=int, default=0, help="number of hidden layers for MLP")
         group.add_argument("--pool_dim", type=int, default=8, help="average pooling dimension")
         group.add_argument("--feat_dim", type=int, default=32, help="tri-plane feature dimension")
-
-        # group.add_argument('--use_norm', type=int, default=1, help="use BN")
-        # group.add_argument('--use_norm', action='store_true', help='enable normalization layer')
         group.add_argument('--no_norm', dest='use_norm', action='store_false', help='disable normalization layer')
-        group.set_defaults(use_norm=True) # FIXME: simpler option for python > 3.9
+        group.set_defaults(use_norm=True)
 
     def _add_training_config(self, parser):
-        """training configuration"""
+        """arguments for training"""
         group = parser.add_argument_group('training')
-        group.add_argument('--ckpt', type=int, default=None, help="restore checkpoint at scale x")
+        group.add_argument('--ckpt', type=int, default=None, help="restore from checkpoint at scale x")
         group.add_argument('--save_frequency', type=int, default=3000, help="save models every x iterations")
         group.add_argument('--vis_frequency', type=int, default=200, help="visualize output every x iterations")
-        group.add_argument('--n_iters', type=int, default=2000, help='number of iterations to train per scale')
+        group.add_argument('--n_iters', type=int, default=2000, help='number of training iterations per scale')
         group.add_argument('--lr_g', type=float, default=0.0001, help='G learning rate, default=0.0005')
         group.add_argument('--lr_d', type=float, default=0.0001, help='D learning rate, default=0.0005')
         group.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
-        group.add_argument('--Gsteps',type=int, default=3, help='Generator inner steps per iteration')
-        group.add_argument('--Dsteps',type=int, default=3, help='Discriminator inner steps per iteration')
+        group.add_argument('--Gsteps',type=int, default=3, help='generator update steps per iteration')
+        group.add_argument('--Dsteps',type=int, default=3, help='discriminator update steps per iteration')
         group.add_argument('--lambda_grad',type=float, default=0.1, help='gradient penelty weight')
         group.add_argument('--alpha',type=float, default=10, help='reconstruction loss weight')
         group.add_argument('--base_noise_amp', type=float, default=0.1, help='base noise amplifier')
@@ -126,13 +120,12 @@ class Config(object):
         group.add_argument('--lr_sigma',type=float,default=0.1, help='learning rate scaling for lower scale when train_depth > 1')
 
     def _add_testing_config(self, parser):
-        """testing configuration"""
+        """arguments for testing"""
         group = parser.add_argument_group('testing')
-        group.add_argument('--ckpt', type=int, default=None, help="use checkpoint at scale x. By default, use the highest scale.")
+        group.add_argument('--ckpt', type=int, default=None, help="checkpoint at scale x. By default, use the highest scale.")
         group.add_argument('--mode', type=str, default='rand', choices=['rand', 'rec', 'interp'], help="inference mode")
         group.add_argument("--resize", nargs="*", type=float, default=[1, 1, 1], help="resize factor along each axis")
-        group.add_argument('--upsample', type=int, default=1, help=">1 for higher resolution output")
+        group.add_argument('--upsample', type=int, default=1, help="upsample scale factor. >1 for higher resolution output")
         group.add_argument('--n_samples', type=int, default=1, help="number of samples to generate")
-        group.add_argument('--no_bin', dest='bin', action='store_false', help='save non-binary output')
+        group.add_argument('--no_bin', dest='bin', action='store_false', help='do not binarize output')
         group.set_defaults(bin=True)
-        # group.add_argument('--seq', action='store_true', help="save result of each scale")
