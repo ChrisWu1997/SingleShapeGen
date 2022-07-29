@@ -1,3 +1,4 @@
+from .model_base import SSGmodelBase
 from .models import SSGmodelTriplane, SSGmodelConv3D
 
 

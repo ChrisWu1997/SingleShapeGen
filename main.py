@@ -2,7 +2,7 @@ import os
 import torch
 from tqdm import tqdm
 from config import Config
-from model import get_model
+from model import get_model, SSGmodelBase
 from utils.data_utils import load_data_fromH5, save_h5_single
 
 
@@ -40,7 +40,7 @@ def main():
             raise NotImplementedError
 
 
-def generate(cfg, ssg_model):
+def generate(cfg: Config, ssg_model: SSGmodelBase):
     """random generation or reconstruction"""
     out_name = f"{cfg.mode}_n{cfg.n_samples}"
     if cfg.bin:
@@ -63,9 +63,9 @@ def generate(cfg, ssg_model):
         save_h5_single(save_path, fake_, ssg_model.scale + 1)
 
 
-def interpolate(cfg, ssg_model):
+def interpolate(cfg: Config, ssg_model: SSGmodelBase):
     """interpolation and extrapolation. No resize, no upsample."""
-    assert hasattr(ssg_model, "interpolation")
+    assert hasattr(ssg_model, "interpolation") # only implemented for SSGmodelTriplane
     out_name = f"interp_n{cfg.n_samples}"
     if cfg.bin:
         out_name += "_bin"
