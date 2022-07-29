@@ -4,7 +4,8 @@ from .model_base import SSGmodelBase
 
 
 class SSGmodelTriplane(SSGmodelBase):
-    def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):
+    """Single shape generative model on tri-plane feature maps."""
+    def _netG_trainable_params(self, lr_g: float, lr_sigma: float, train_depth: int):
         # set different learning rate for lower stages
         parameter_list = [{"params": block.parameters(), "lr": lr_g * (lr_sigma ** (len(self.netG.body[-train_depth:]) - 1 - idx))}
                 for idx, block in enumerate(self.netG.body[-train_depth:])]
@@ -15,7 +16,7 @@ class SSGmodelTriplane(SSGmodelBase):
         parameter_list += [{"params": self.netG.mlp.parameters(), "lr": lr_g}]
         return parameter_list
     
-    def _draw_fake_in_training(self, mode):
+    def _draw_fake_in_training(self, mode: str):
         init_noise = self.draw_init_noise(mode)
         real_sizes = self.real_sizes[:self.scale + 1]
         noises_list = self.draw_noises_list(mode, self.scale)
@@ -24,6 +25,7 @@ class SSGmodelTriplane(SSGmodelBase):
             fake = self.netG(init_noise, real_sizes, noises_list, mode)
         else:
             # NOTE: get features from non-trainable scales under torch.no_grad(), seems to be quicker
+            # save computation by using cached self.prev_opt_feats for reconstruction
             prev_depth = self.scale - self.train_depth
             if mode == 'rec' and self.prev_opt_feats is not None:
                 prev_feats = self.prev_opt_feats
@@ -38,12 +40,12 @@ class SSGmodelTriplane(SSGmodelBase):
                     mode, prev_depth + 1, -1)
         return fake
 
-    def draw_noises_list(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0)):
+    def draw_noises_list(self, mode: str, scale=None, resize_factor=(1.0, 1.0, 1.0)):
         if scale is None:
             scale = self.scale
-        noises_list = [] # first scale no additive noise
+        noises_list = []
         for i in range(scale + 1):
-            if i == 0:
+            if i == 0: # first scale no additive tri-plane noise
                 noises_list.append(None)
             else:
                 if mode == 'rec':
@@ -56,7 +58,7 @@ class SSGmodelTriplane(SSGmodelBase):
                     noises_list.append(tri_noise)
         return noises_list
     
-    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
+    def generate(self, mode: str, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
         if scale is None:
             scale = self.scale
         init_noise = self.draw_init_noise(mode, resize_factor)
@@ -64,13 +66,21 @@ class SSGmodelTriplane(SSGmodelBase):
         noises_list = self.draw_noises_list(mode, scale, resize_factor)
 
         coords = None
-        if upsample > 1:
+        if upsample > 1: # if upsample to increase resolution, use point coordinates for query
             query_shape = [round(x * upsample) for x in real_sizes[-1]]
             coords = make_coord(*query_shape, self.device)
         out = self.netG(init_noise, real_sizes, noises_list, mode, coords, return_each=return_each)
         return out
 
-    def interpolation(self, alpha_list):
+    def interpolation(self, alpha_list: list):
+        """inter(extra-)polation between two generated shapes
+
+        Args:
+            alpha_list (list): blending alpha values. <0 or >1 for extrapolation.
+
+        Returns:
+            list: a list of generated 3D shapes (1, 1, H, W, D)
+        """
         mode = 'rand'
         init_noise1 = self.draw_init_noise(mode)
         init_noise2 = self.draw_init_noise(mode)
@@ -87,13 +97,14 @@ class SSGmodelTriplane(SSGmodelBase):
 
 
 class SSGmodelConv3D(SSGmodelBase):
-    def _netG_trainable_params(self, lr_g, lr_sigma, train_depth):
+    """Single shape generative model on 3D voxel grid (SinGAN-3D)."""
+    def _netG_trainable_params(self, lr_g: float, lr_sigma: float, train_depth: int):
         # set different learning rate for lower stages
         parameter_list = [{"params": block.parameters(), "lr": lr_g * (lr_sigma ** (len(self.netG.body[-train_depth:]) - 1 - idx))}
                 for idx, block in enumerate(self.netG.body[-train_depth:])]
         return parameter_list
     
-    def _draw_fake_in_training(self, mode):
+    def _draw_fake_in_training(self, mode: str):
         init_inp = torch.zeros_like(self.noiseOpt_init)
         noises_list = self.draw_noises_list(mode, self.scale)
 
@@ -112,32 +123,27 @@ class SSGmodelConv3D(SSGmodelBase):
             fake = self.netG(prev_feats, noises_list[prev_depth + 1:], start_scale=prev_depth + 1)
         return fake
 
-    def draw_noises_list(self, mode, scale, resize_factor=(1.0, 1.0, 1.0)):
-        noises_list = [] # first scale no additive noise
+    def draw_noises_list(self, mode: str, scale=None, resize_factor=(1.0, 1.0, 1.0)):
+        noises_list = []
         for i in range(scale + 1):
             if i == 0:
                 noise = self.draw_init_noise(mode, resize_factor)
             else:
                 noise_shape = self.real_sizes[i]
-                if resize_factor != (1.0, 1.0, 1.0):
-                    noise_shape = [round(noise_shape[j] * resize_factor[j]) for j in range(3)]
-                noise = generate_3d_noise(*noise_shape, mode, self.noiseAmp_list[i], self.device)
+                if mode == "rec":
+                    noise = torch.zeros((1, 1, *noise_shape), device=self.device)
+                else:
+                    if resize_factor != (1.0, 1.0, 1.0):
+                        noise_shape = [round(noise_shape[j] * resize_factor[j]) for j in range(3)]
+                    noise = generate_3d_noise(*noise_shape, self.noiseAmp_list[i], self.device)
             noises_list.append(noise)
         return noises_list
     
-    def generate(self, mode, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
+    def generate(self, mode: str, scale=None, resize_factor=(1.0, 1.0, 1.0), upsample=1, return_each=False):
+        # upsample (increase output resolution) not possible
         if scale is None:
             scale = self.scale
         noises_list = self.draw_noises_list(mode, scale, resize_factor)
         init_inp = torch.zeros_like(noises_list[0])
-        # if resize_factor != (1.0, 1.0, 1.0):
-        #     assert mode != 'rec'
-        #     init_size = [round(self.noiseOpt_init.shape[-3:][i] * resize_factor[i]) for i in range(3)]
-        #     init_inp = torch.zeros(init_size, dtype=torch.float32).cuda()
-        #     # init_noise = torch.randn_like(init_inp)
-        #     # noises_list[0] = init_noise
-        # else:
-        #     init_inp = self.template
-        
         out = self.netG(init_inp, noises_list, end_scale=scale, return_each=return_each)
         return out

@@ -2,8 +2,17 @@ import numpy as np
 import torch
 
 
-def calc_gradient_penalty(netD, real_data, fake_data):
-    #print real_data.size()
+def calc_gradient_penalty(netD, real_data: torch.Tensor, fake_data: torch.Tensor):
+    """calculate gradient penalty (WGAN-GP), average over sptial dimensions.
+
+    Args:
+        netD (nn.Module): discriminator (critic) network
+        real_data (torch.Tensor): real (reference) data
+        fake_data (torch.Tensor): fake (generated) data
+
+    Returns:
+        gradient penalty: torch.Tensor
+    """
     alpha = torch.rand(1, 1)
     alpha = alpha.expand(real_data.size())
     alpha = alpha.cuda() #gpu) #if use_cuda else alpha
@@ -16,37 +25,58 @@ def calc_gradient_penalty(netD, real_data, fake_data):
     disc_interpolates = netD(interpolates)
 
     gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolates,
-                            grad_outputs=torch.ones(disc_interpolates.size()).cuda(), #if use_cuda else torch.ones(
-                                #disc_interpolates.size()),
+                            grad_outputs=torch.ones(disc_interpolates.size()).cuda(),
                             create_graph=True, retain_graph=True, only_inputs=True)[0]
     #LAMBDA = 1
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    # gradient_penalty = torch.clamp((gradients.norm(2, dim=1) - 1) ** 2, min=None, max=1.0).mean()
+    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() # average over sptial dimensions
     return gradient_penalty
 
 
-def set_require_grads(model, require_grad):
+def set_require_grads(model, require_grad: bool):
+    """set requires_grad for model parameters"""
     for p in model.parameters():
         p.requires_grad_(require_grad)
 
 
-def generate_tri_plane_noise(res_x, res_y, res_z, nf, noise_amp, device):
+def generate_tri_plane_noise(res_x: int, res_y: int, res_z: int, nf: int, noise_amp: float, device: torch.device):
+    """generate a tuple of added noise for tri-plane maps.
+
+    Args:
+        res_x (int): x-axis resolution
+        res_y (int): y-axis resolution
+        res_z (int): z-axis resolution
+        nf (int): number of features
+        noise_amp (float): noise std
+        device (torch.device): much quicker if directly generating on device
+
+    Returns:
+        noise maps: three noise tensors
+    """
     noise = [(torch.randn(1, nf, res_y, res_z, device=device) * noise_amp).detach(), 
              (torch.randn(1, nf, res_x, res_z, device=device) * noise_amp).detach(), 
              (torch.randn(1, nf, res_x, res_y, device=device) * noise_amp).detach()]
     return noise
 
 
-def generate_3d_noise(res_x, res_y, res_z, mode, noise_amp, device):
-    if mode == 'rec':
-        noise = torch.zeros(1, 1, res_x, res_y, res_z, device=device)
-    else:
-        noise = (torch.randn(1, 1, res_x, res_y, res_z, device=device) * noise_amp).detach()
+def generate_3d_noise(res_x: int, res_y: int, res_z: int, noise_amp: float, device: torch.device):
+    """generate a tuple of added 3D noise."""
+    noise = (torch.randn(1, 1, res_x, res_y, res_z, device=device) * noise_amp).detach()
     return noise
 
 
-def make_coord(H, W, D, device, normalize=True):
-    """ Make coordinates at grid centers."""
+def make_coord(H: int, W: int, D: int, device: torch.Tensor, normalize=True):
+    """Generate xyz coordinates for all points at grid centers.
+
+    Args:
+        H (int): height
+        W (int): width
+        D (int): depth
+        device (torch.Tensor): torch device
+        normalize (bool, optional): normalize to [-1, 1]. Defaults to True.
+
+    Returns:
+        torch.Tensor: point coordinates of shape (H, W, D, 3)
+    """
     xs = torch.arange(H, device=device).float() 
     ys = torch.arange(W, device=device).float()
     zs = torch.arange(D, device=device).float()
@@ -60,6 +90,7 @@ def make_coord(H, W, D, device, normalize=True):
 
 
 def slice_volume_along_xyz(volume: np.ndarray):
+    """slice a 3D volume along the mid point of each axis"""
     img1 = volume[volume.shape[0] // 2]
     img2 = volume[:, volume.shape[0] // 2]
     img3 = volume[:, :, volume.shape[0] // 2]
@@ -74,8 +105,7 @@ def slice_volume_along_xyz(volume: np.ndarray):
 
 
 class TrainClock(object):
-    """ Clock object to track epoch and step during training
-    """
+    """ Clock object to track epoch and step during training"""
     def __init__(self):
         self.epoch = 1
         self.minibatch = 0

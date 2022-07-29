@@ -282,7 +282,7 @@ class GrowingGenerator3D(nn.Module):
 
         Args:
             inp (torch.Tensor): input 3D volume
-            noises_list (list): list of 3D noise
+            noises_list (list): list of 3D noise. The first one is the input noise.
             start_scale (int, optional): start scale. Defaults to 0.
             end_scale (int, optional): end scale. Defaults to -1.
             return_each (bool, optional): return output at each scale. Defaults to False.
