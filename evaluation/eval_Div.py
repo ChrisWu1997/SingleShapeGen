@@ -12,7 +12,7 @@ from utils.data_utils import load_data_fromH5
 def pairwise_IoU_dist(data_list: list):
     """average pairwise 1-IoU for a list of 3D shape volume"""
     avgv = []
-    for i in tqdm(range(len(data_list))):
+    for i in tqdm(range(len(data_list)), desc='Div'):
         data_i = data_list[i]
         intersect = torch.logical_and(data_i, data_list).sum(dim=(1, 2, 3))
         union = torch.logical_or(data_i, data_list).sum(dim=(1, 2, 3))
@@ -38,7 +38,7 @@ def main():
 
     gen_data_list = []
     filenames = sorted([x for x in os.listdir(args.src) if x.endswith('.h5')])
-    for name in tqdm(filenames, desc="DIV"):
+    for name in filenames:
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
         gen_data = torch.from_numpy(gen_data > 0.5).cuda()
