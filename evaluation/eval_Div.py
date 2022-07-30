@@ -9,7 +9,8 @@ sys.path.append('..')
 from utils.data_utils import load_data_fromH5
 
 
-def pairwise_IoU_dist(data_list):
+def pairwise_IoU_dist(data_list: list):
+    """average pairwise 1-IoU for a list of 3D shape volume"""
     avgv = []
     for i in tqdm(range(len(data_list))):
         data_i = data_list[i]

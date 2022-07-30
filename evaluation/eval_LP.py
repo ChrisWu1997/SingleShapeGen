@@ -11,7 +11,17 @@ sys.path.append('..')
 from utils.data_utils import load_data_fromH5
 
 
-def extract_valid_patches_unfold(voxels, patch_size, stride=None):
+def extract_valid_patches_unfold(voxels: torch.Tensor, patch_size: int, stride=None):
+    """extract near-surface patches of a 3D shape using torch.unfold
+
+    Args:
+        voxels (torch.Tensor): a 3D shape volume of size (H, W, D)
+        patch_size (int): patch size
+        stride (int, optional): stride for overlapping. Defaults to None. If None, set as half patch size.
+
+    Returns:
+        patches: size (N, patch_size, patch_size, patch_size)
+    """
     overlap = patch_size // 2 if stride is None else stride
 
     p = patch_size // 2
@@ -32,31 +42,51 @@ def extract_valid_patches_unfold(voxels, patch_size, stride=None):
     return patches
 
 
-def eval_LP_IoU(gen_patches, ref_patches, threshold=0.95):
-    dists = []
+def eval_LP_IoU(gen_patches: torch.Tensor, ref_patches: torch.Tensor, threshold=0.95):
+    """compute LP-IoU over two set of patches.
+
+    Args:
+        gen_patches (torch.Tensor): patches from generated shape
+        ref_patches (torch.Tensor): patches from reference shape
+        threshold (float, optional): IoU threshold. Defaults to 0.95.
+
+    Returns:
+        average max IoU, LP-IoU
+    """
+    values = []
     for i in range(gen_patches.shape[0]):
         intersect = torch.logical_and(ref_patches, gen_patches[i:i+1]).sum(dim=(1, 2, 3))
         union = torch.logical_or(ref_patches, gen_patches[i:i+1]).sum(dim=(1, 2, 3))
         max_iou = torch.max(intersect / union)
-        dists.append(max_iou)
-    dists = torch.stack(dists)
-    avg_iou = torch.mean(dists).item()
-    percent = torch.sum((dists > threshold).int()).item() * 1.0 / len(dists)
+        values.append(max_iou)
+    values = torch.stack(values)
+    avg_iou = torch.mean(values).item()
+    percent = torch.sum((values > threshold).int()).item() * 1.0 / len(values)
     return avg_iou, percent
 
 
-def eval_LP_Fscore(gen_patches, ref_patches, threshold=0.95):
-    dists = []
+def eval_LP_Fscore(gen_patches: torch.Tensor, ref_patches: torch.Tensor, threshold=0.95):
+    """compute LP-F-score over two set of patches.
+
+    Args:
+        gen_patches (torch.Tensor): patches from generated shape
+        ref_patches (torch.Tensor): patches from reference shape
+        threshold (float, optional): F-score threshold. Defaults to 0.95.
+
+    Returns:
+        average max F-score, LP-F-score
+    """
+    values = []
     for i in range(gen_patches.shape[0]):
         true_positives = torch.logical_and(ref_patches, gen_patches[i:i+1]).sum(dim=(1, 2, 3))
         precision = true_positives / gen_patches[i:i+1].sum()
         recall = true_positives / ref_patches.sum(dim=(1, 2, 3))
         Fscores = 2 * precision * recall / (precision + recall + 1e-8)
         Fscore = torch.max(Fscores)
-        dists.append(Fscore)
-    dists = torch.stack(dists)
-    avg_fscore = torch.mean(dists).item()
-    percent = torch.sum((dists > threshold).int()).item() * 1.0 / len(dists)
+        values.append(Fscore)
+    values = torch.stack(values)
+    avg_fscore = torch.mean(values).item()
+    percent = torch.sum((values > threshold).int()).item() * 1.0 / len(values)
     return avg_fscore, percent
 
 
