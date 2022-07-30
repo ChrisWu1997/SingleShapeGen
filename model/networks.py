@@ -147,61 +147,24 @@ class GrowingGeneratorTriplane(nn.Module):
         yz_feat = F.adaptive_avg_pool3d(ni, (self.pool_dim, in_shape[1], in_shape[2])).squeeze(1)
         xz_feat = F.adaptive_avg_pool3d(ni, (in_shape[0], self.pool_dim, in_shape[2])).squeeze(1).permute(0, 2, 1, 3)
         xy_feat = F.adaptive_avg_pool3d(ni, (in_shape[0], in_shape[1], self.pool_dim)).squeeze(1).permute(0, 3, 1, 2)
-        yz_feat, xz_feat, xy_feat = self.head_conv([yz_feat, xz_feat, xy_feat])
+        yz_feat, xz_feat, xy_feat = self.head_conv([yz_feat, xz_feat, xy_feat], add_noise=False, skip_add=False)
         return [yz_feat, xz_feat, xy_feat]
 
-    def forward_scale(self, tri_feats: list, i: int, up_size: list, tri_noises: list, mode: str, coords=None, decode=False):
-        """forward through the generator block at scale i.
-
-        Args:
-            tri_feats (list): tri-plane feature maps
-            i (int): i-th scale 
-            up_size (list): upsampled size
-            tri_noises (list): tri-plane noise maps
-            mode (str): "rec" for ignoring noise
-            coords (tensor, optional): query point coordinates. Defaults to None.
-            decode (bool, optional): decode output volume. Defaults to False.
-
-        Returns:
-            output: if decode, generated shape volume; else, tri-plane feature maps.
-        """
-        yz_feat, xz_feat, xy_feat = tri_feats
-        if i > 0:
-            # upsample
-            # up_size = real_sizes[i]
-            yz_feat = F.interpolate(yz_feat, size=(up_size[1], up_size[2]), mode='bilinear', align_corners=True) # .detach()
-            xz_feat = F.interpolate(xz_feat, size=(up_size[0], up_size[2]), mode='bilinear', align_corners=True) # .detach()
-            xy_feat = F.interpolate(xy_feat, size=(up_size[0], up_size[1]), mode='bilinear', align_corners=True) # .detach()
-
-        yz_feat_prev = yz_feat
-        xz_feat_prev = xz_feat
-        xy_feat_prev = xy_feat
-        
-        # add noise, assume rec mode add zero noise
-        if i > 0 and mode != 'rec':
-            yz_feat = yz_feat + tri_noises[0]
-            xz_feat = xz_feat + tri_noises[1]
-            xy_feat = xy_feat + tri_noises[2]
-
-        yz_feat, xz_feat, xy_feat = self.body[i]([yz_feat, xz_feat, xy_feat])
-        # skip connect
-        if i > 0:
-            yz_feat = yz_feat + yz_feat_prev
-            xz_feat = xz_feat + xz_feat_prev
-            xy_feat = xy_feat + xy_feat_prev
-        
-        if not decode:
-            return [yz_feat, xz_feat, xy_feat]
-
-        out = self.query([yz_feat, xz_feat, xy_feat], coords)
-        return out
+    def _upsample_triplanes(self, tri_feats: list, up_size: list):
+        """upsample tri-plane feature maps"""
+        tri_feats[0] = F.interpolate(tri_feats[0], size=(up_size[1], up_size[2]), mode='bilinear', align_corners=True)
+        tri_feats[1] = F.interpolate(tri_feats[1], size=(up_size[0], up_size[2]), mode='bilinear', align_corners=True)
+        tri_feats[2] = F.interpolate(tri_feats[2], size=(up_size[0], up_size[1]), mode='bilinear', align_corners=True)
+        return tri_feats
 
     def draw_feats(self, init_noise: list, real_sizes: list, noises_list: list, mode: str, end_scale: int):
         """draw generated tri-plane feature maps at end_scale. To facilitate training."""
         tri_feats = self.forward_head(init_noise)
 
         for i in range(end_scale):
-            tri_feats = self.forward_scale(tri_feats, i, real_sizes[i], noises_list[i], mode)
+            if i > 0:
+                tri_feats = self._upsample_triplanes(tri_feats, real_sizes[i])
+            tri_feats = self.body[i](tri_feats, noises_list[i], add_noise=i > 0 and mode != "rec", skip_add=i > 0)
         return tri_feats
     
     def decode_feats(self, tri_feats: list, real_sizes: list, noises_list: list, mode: str, start_scale: int, end_scale=-1):
@@ -210,11 +173,13 @@ class GrowingGeneratorTriplane(nn.Module):
         if end_scale == -1:
             end_scale = len(self.body)
         for i in range(end_scale - start_scale):
-            tri_feats = self.forward_scale(tri_feats, start_scale + i, real_sizes[i], noises_list[i], mode)
+            if i > 0:
+                tri_feats = self._upsample_triplanes(tri_feats, real_sizes[i])
+            tri_feats = self.body[i](tri_feats, noises_list[i], add_noise=i > 0 and mode != "rec", skip_add=i > 0)
         out = self.query(tri_feats)
         return out
 
-    def forward(self, init_noise: torch.Tensor, real_sizes: list, noises_list: list, mode: str, coords=None, return_each=False, return_feat=False):
+    def forward(self, init_noise: torch.Tensor, real_sizes: list, noises_list: list, mode: str, coords=None, return_each=False):
         """forward through the model
 
         Args:
@@ -224,7 +189,6 @@ class GrowingGeneratorTriplane(nn.Module):
             mode (str): "rand" or "rec"
             coords (torch.Tensor, optional): query point coordinates. Defaults to None.
             return_each (bool, optional): return output at each scale. Defaults to False.
-            return_feat (bool, optional): return also feature maps. Defaults to False.
 
         Returns:
             output: 3D shape volume, or a list of 3D shape volume, or feature maps
@@ -234,7 +198,9 @@ class GrowingGeneratorTriplane(nn.Module):
         out_list = []
 
         for i, block in enumerate(self.body[:len(real_sizes)]):
-            tri_feats = self.forward_scale(tri_feats, i, real_sizes[i], noises_list[i], mode)
+            if i > 0:
+                tri_feats = self._upsample_triplanes(tri_feats, real_sizes[i])
+            tri_feats = block(tri_feats, noises_list[i], add_noise=i > 0 and mode != "rec", skip_add=i > 0)
 
             if return_each:
                 out = self.query(tri_feats, coords)
@@ -244,8 +210,6 @@ class GrowingGeneratorTriplane(nn.Module):
             return out_list
         
         out = self.query(tri_feats, coords)
-        if return_feat:
-            return out, tri_feats
         return out
 
 

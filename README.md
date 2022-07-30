@@ -7,7 +7,12 @@ Set up a conda environment with all dependencies:
 conda env create -f environment.yml
 conda activate ssg
 ```
-TBA: A Colab?
+or through pip
+```bash
+pip install requirement.txt
+```
+
+TBA: A GUI Demo
 
 ## Run pretrained models
 We provide pretrained models for all example shapes in the paper: [link TBA]() ([backup]()). Download and extract in `checkpoints` folder.
@@ -15,9 +20,9 @@ We provide pretrained models for all example shapes in the paper: [link TBA]() (
 ### Random generation
 To randomly generate new shapes, run
 ```bash
-python test.py --tag ssg_Acropolis_res256s8 -g 0 --n_samples 10 --mode rand
+python main.py test --tag ssg_Acropolis_res256s8 -g 0 --n_samples 10 --mode rand
 ```
-The results will be saved in `checkpoints/ssg_Acropolis_r256s8/rand_n10_bin_r1x1x1`.
+The generated shapes (`.h5` files) will be saved in `checkpoints/ssg_Acropolis_r256s8/rand_n10_bin_r1x1x1`.
 
 Specify `--resize` to change the spatial dimensions. For example, `--resize 1.5 1.0 1.0` generates shapes whose size along x-axis are 1.5 times larger than original.
 
@@ -26,11 +31,11 @@ Specify `--upsample` to construct the output shape at a higher resolution. For e
 ### Interpolation and extrapolation
 For interpolation and extrapolation between two randomly generated samples, run
 ```bash
-python test.py --tag ssg_Acropolis_r256s8 -g 0 --n_samples 5 --mode interp
+python main.py test --tag ssg_Acropolis_r256s8 -g 0 --n_samples 5 --mode interp
 ```
 
 ### Visualize and export
-To quickly visualize the generated shapes, run
+To quickly visualize the generated shapes (of `.h5` format), run
 ```bash
 python vis_export.py -s checkpoints/ssg_Acropolis_r256s8/rand_n10_bin_r1x1x1 -f mesh --smooth 3 --cleanup
 ```
@@ -56,7 +61,7 @@ TBA: how to provide preprocessed data?
 ## Training
 To train on the processed h5 data, run
 ```bash
-python train.py --tag {your-experiment-tag} -s {path-to-processed-h5-data} -g {gpu-id}
+python main.py train --tag {your-experiment-tag} -s {path-to-processed-h5-data} -g {gpu-id}
 ```
 By default, the log and model will be saved in `checkpoints/{your-experiment-tag}`.
 

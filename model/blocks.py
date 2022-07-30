@@ -83,7 +83,8 @@ class TriplaneConvs(nn.Module):
             self.conv_xy = self.make_2Dconvs(in_channels, out_channels_list,
                                              ker_size, stride, padd, use_norm)
 
-    def make_2Dconvs(self, in_c, out_c_list, ker_size, stride, padd, use_norm):
+    def make_2Dconvs(self, in_c: int, out_c_list: list, ker_size: int, stride: int, padd: int, use_norm: bool):
+        """make a sequence of 2D ConvBlock"""
         model = nn.Sequential()
         model.add_module(
             'conv0',
@@ -99,11 +100,40 @@ class TriplaneConvs(nn.Module):
                           sdim='2d', padd_mode='zeros', onlyconv=is_last))
         return model
 
-    def forward(self, tri_feats):
-        yz_feat = self.conv_yz(tri_feats[0])
-        xz_feat = self.conv_xz(tri_feats[1])
-        xy_feat = self.conv_xy(tri_feats[2])
-        return yz_feat, xz_feat, xy_feat
+    def forward(self, tri_feats: list, tri_noises: list = None, add_noise=True, skip_add=True):
+        """
+        Args:
+            tri_feats (list): tri-plane feature maps
+            tri_noises (list, optional): tri-plane noise maps
+            add_noise (bool, optional): add tri-lane noise maps
+            skip_add (bool, optional): skip connection
+
+        Returns:
+            output: tri-plane feature maps
+        """
+        yz_feat, xz_feat, xy_feat = tri_feats
+        if skip_add:
+            yz_feat_prev = yz_feat
+            xz_feat_prev = xz_feat
+            xy_feat_prev = xy_feat
+        
+        # add noise, assume rec mode add zero noise
+        if add_noise and tri_noises is not None:
+            yz_feat = yz_feat + tri_noises[0]
+            xz_feat = xz_feat + tri_noises[1]
+            xy_feat = xy_feat + tri_noises[2]
+
+        yz_feat = self.conv_yz(yz_feat)
+        xz_feat = self.conv_xz(xz_feat)
+        xy_feat = self.conv_xy(xy_feat)
+
+        # skip connect
+        if skip_add:
+            yz_feat = yz_feat + yz_feat_prev
+            xz_feat = xz_feat + xz_feat_prev
+            xy_feat = xy_feat + xy_feat_prev
+        
+        return [yz_feat, xz_feat, xy_feat]
 
 
 class Convs3DSkipAdd(nn.Module):
