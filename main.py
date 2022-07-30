@@ -75,6 +75,7 @@ def interpolate(cfg: Config, ssg_model: SSGmodelBase):
 
     # NOTE: hard-coded blending weights    
     alpha_list = [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
+    print("Alpha values:", alpha_list)
 
     for k in tqdm(range(cfg.n_samples), desc="Inter(extra)-polation"):
         save_dir = os.path.join(out_dir, f'pair{k}')
