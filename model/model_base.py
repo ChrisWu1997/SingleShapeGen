@@ -253,8 +253,8 @@ class SSGmodelBase(ABC):
 
     def _train_single_scale(self, real_data: torch.Tensor):
         """train current scale for n iterations"""
-        print(f"scale: {self.shape}, real shape dimensions: {real_data.shape}, noise amp: {self.noiseAmp_list[-1]}")
-        pbar = tqdm(range(self.config.n_iters), desc=f"Train scale {i}")
+        print(f"scale: {self.scale}, real shape dimensions: {real_data.shape}, noise amp: {self.noiseAmp_list[-1]}")
+        pbar = tqdm(range(self.config.n_iters), desc=f"Train scale {self.scale}")
         self.prev_opt_feats = None # buffer of prev scale features for reconstruction
         for i in pbar:
             losses = self._updateStep(real_data)

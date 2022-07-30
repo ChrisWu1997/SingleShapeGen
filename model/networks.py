@@ -173,9 +173,10 @@ class GrowingGeneratorTriplane(nn.Module):
         if end_scale == -1:
             end_scale = len(self.body)
         for i in range(end_scale - start_scale):
-            if i > 0:
+            ii = start_scale + i
+            if ii > 0:
                 tri_feats = self._upsample_triplanes(tri_feats, real_sizes[i])
-            tri_feats = self.body[i](tri_feats, noises_list[i], add_noise=i > 0 and mode != "rec", skip_add=i > 0)
+            tri_feats = self.body[ii](tri_feats, noises_list[i], add_noise=ii > 0 and mode != "rec", skip_add=ii > 0)
         out = self.query(tri_feats)
         return out
 
