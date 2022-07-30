@@ -13,7 +13,8 @@ import binvox_rw
 BINVOX_PATH = "./binvox"
 
 
-def load_mesh(path, normalize=True):
+def load_mesh(path: str, normalize=True):
+    """load mesh file and (optionally) normalize it within unit sphere"""
     mesh = trimesh.load(path)
     if isinstance(mesh, trimesh.Scene):
         print("convert trimesh.Scene to trimesh.Trimeh")
@@ -34,9 +35,19 @@ def load_mesh(path, normalize=True):
     return mesh
 
 
-def multiscale_voxelization_binvox(path, resolution_list, min_size):
-    """voxelization at different resolution"""
-    # normalize to -1 ~ 1 and save
+def multiscale_voxelization_binvox(path: str, resolution_list: list, min_size: int):
+    """voxelize a mesh at different resolution (multi-scale)
+
+    Args:
+        path (str): path to mesh file
+        resolution_list (list): list of shape resolution (i.e., largest dimension of xyz)
+            [(H_0, W_0, D_0), (H_1, W_1, D_1), ...], ascending order
+        min_size (int): mininum spatial dimension
+
+    Returns:
+        list: a list of multi-scale 3D shape
+    """
+    # normalize to -1 ~ 1 and save, otherwise binvox might give incorrect result
     mesh = load_mesh(path, normalize=True)
     norm_path = os.path.splitext(path) + '_norm.obj'
     mesh.export(norm_path)
@@ -83,9 +94,9 @@ def multiscale_voxelization_binvox(path, resolution_list, min_size):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--src', type=str, help='source shape path', required=True, default=None)
+    parser.add_argument('-s', '--src', type=str, help='source mesh path', required=True, default=None)
     parser.add_argument('--res', type=int, help='finest resolution', default=128)
-    parser.add_argument('--factor', type=float, help='scaling factor', default=0.75)
+    parser.add_argument('--factor', type=float, help='downsampling factor', default=0.75)
     parser.add_argument('--n_scales', type=int, help='number of scales', default=7)
     parser.add_argument('--min_size', type=int, help='minimum size', default=15)
     parser.add_argument('-o', '--output', type=str, help='output save path', default=None)
