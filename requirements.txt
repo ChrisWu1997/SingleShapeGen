@@ -1,0 +1,11 @@
+h5py==3.6.0
+numpy==1.22.3
+Pillow==9.0.1
+pyglet==1.5.26
+PyMCubes==0.1.2
+scikit-image==0.19.2
+scipy==1.7.3
+tensorboardX==2.2
+torch==1.11.0
+tqdm==4.64.0
+trimesh==3.12.5
