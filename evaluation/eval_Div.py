@@ -29,10 +29,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--src', type=str, required=True, help='generated data folder')
     parser.add_argument('-o', '--output', type=str, default=None, help='result save path')
-    parser.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
+    parser.add_argument('-g', '--gpu_ids', type=int, default=0, help="which gpu to use. -1 for CPU.")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    # os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    device = torch.device(f"cuda:{args.gpu_ids}" if args.gpu_ids >= 0 else "cpu")
 
     random.seed(1234)
 
@@ -41,7 +42,7 @@ def main():
     for name in filenames:
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
-        gen_data = torch.from_numpy(gen_data > 0.5).cuda()
+        gen_data = torch.from_numpy(gen_data > 0.5).to(device)
         
         gen_data_list.append(gen_data)
 

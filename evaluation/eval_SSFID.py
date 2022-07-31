@@ -87,10 +87,11 @@ def main():
     parser.add_argument('-r', '--ref', type=str, required=True, help='reference data path')
     parser.add_argument('--model_out_layer', type=int, default=2, help='use the output from which layer')
     parser.add_argument('-o', '--output', type=str, default=None, help='result save path')
-    parser.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
+    parser.add_argument('-g', '--gpu_ids', type=int, default=0, help="which gpu to use. -1 for CPU.")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    # os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    device = torch.device(f"cuda:{args.gpu_ids}" if args.gpu_ids >= 0 else "cpu")
 
     random.seed(1234)
 
@@ -101,12 +102,12 @@ def main():
     if not os.path.exists(weights_path):
         raise RuntimeError(f"'{weights_path}' not exists. Please download it first.")
     model.load_state_dict(torch.load(weights_path))
-    model.cuda()
+    model.to(device)
     model.eval()
 
     # load ref
     ref_data = load_data_fromH5(args.ref, smooth=False, only_finest=True)
-    ref_data = torch.from_numpy(ref_data).float().cuda()
+    ref_data = torch.from_numpy(ref_data).float().to(device)
 
     mu_r, sigma_r = calculate_activation_statistics(ref_data, model, args.model_out_layer)
 
@@ -115,7 +116,7 @@ def main():
     for name in tqdm(filenames, desc="SSFID"):
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
-        gen_data = torch.from_numpy(gen_data).float().cuda()
+        gen_data = torch.from_numpy(gen_data).float().to(device)
         if gen_data.shape != ref_data.shape:
             raise RuntimeError('Generated shape and reference shape shall have equal size.')
         

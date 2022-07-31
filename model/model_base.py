@@ -19,14 +19,14 @@ class SSGmodelBase(ABC):
         self.clock = TrainClock()
         self.config = config
         self.train_depth = config.train_depth
+        self.device = torch.device(f"cuda:{config.gpu_ids}" if config.gpu_ids >= 0 else "cpu")
 
         self.scale = 0
-        self.netD = get_network(config, 'D').cuda()
-        self.netG = get_network(config, 'G').cuda()
+        self.netD = get_network(config, 'D').to(self.device)
+        self.netG = get_network(config, 'G').to(self.device)
         self.noiseOpt_init = None # fixed noise at first scale
         self.noiseAmp_list = [] # gaussian noise std for each scale
         self.real_sizes = [] # real data spatial dimensions
-        self.device = torch.device('cuda:0')
     
     @abstractmethod
     def _netG_trainable_params(self, lr_g: float, lr_sigma: float, train_depth: int):
@@ -109,8 +109,8 @@ class SSGmodelBase(ABC):
             'realSizes_list': self.real_sizes,
         }, save_path)
 
-        self.netD.cuda()
-        self.netG.cuda()
+        self.netD.to(self.device)
+        self.netG.to(self.device)
 
     def load_ckpt(self, n_scale: int, name="latest"):
         """load saved checkpoint"""
@@ -120,15 +120,15 @@ class SSGmodelBase(ABC):
         print(f"Load checkpoint from {load_path}.")
         checkpoint = torch.load(load_path)
         
-        self.noiseOpt_init = checkpoint['noiseOpt_init'].cuda()
+        self.noiseOpt_init = checkpoint['noiseOpt_init'].to(self.device)
         self.noiseAmp_list = checkpoint['noiseAmp_list']
         self.real_sizes = checkpoint['realSizes_list']
         for _ in range(n_scale + 1):
             self.netG.init_next_scale()
         self.netG.load_state_dict(checkpoint['netG_state_dict'])
         self.netD.load_state_dict(checkpoint['netD_state_dict'])
-        self.netG.cuda()
-        self.netD.cuda()
+        self.netG.to(self.device)
+        self.netD.to(self.device)
 
         self._set_optimizer()
         self.optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])
@@ -163,7 +163,8 @@ class SSGmodelBase(ABC):
 
         # get gradient penalty
         if self.config.lambda_grad:
-            gradient_penalty = calc_gradient_penalty(self.netD, real_data, generated_data) * self.config.lambda_grad
+            gradient_penalty = calc_gradient_penalty(self.netD, 
+                real_data, generated_data, self.device) * self.config.lambda_grad
             loss += gradient_penalty 
         
         # backward loss
@@ -284,7 +285,7 @@ class SSGmodelBase(ABC):
             # init networks and optimizers for each scale
             # self.netD is reused directly
             self.netG.init_next_scale()
-            self.netG.cuda()
+            self.netG.to(self.device)
             assert self.netG.n_scales == s + 1
 
             self._set_optimizer()
@@ -307,7 +308,7 @@ class SSGmodelBase(ABC):
     def _set_real_data(self, real_data_list: list):
         """set a list of multi-scale 3D shapes for training"""
         print("real data dimensions: ", [x.shape for x in real_data_list])
-        self.real_list = [torch.tensor(x, dtype=torch.float32).unsqueeze(0).unsqueeze(0).cuda() for x in real_data_list]
+        self.real_list = [torch.tensor(x, dtype=torch.float32, device=self.device).unsqueeze(0).unsqueeze(0) for x in real_data_list]
         self.real_sizes = [x.shape[-3:] for x in self.real_list]
 
     def _compute_noise_sigma(self, scale: int):
@@ -317,7 +318,7 @@ class SSGmodelBase(ABC):
             if s > 0:
                 prev_rec = self.generate('rec', s - 1)
                 prev_rec = F.interpolate(prev_rec, size=self.real_list[s].shape[2:], mode='trilinear', align_corners=False)
-                noise_amp = self.config.base_noise_amp * torch.sqrt(F.mse_loss(self.real_list[s], prev_rec))
+                noise_amp = self.config.base_noise_amp * torch.sqrt(F.mse_loss(self.real_list[s], prev_rec)).item()
             else:
                 noise_amp = 1.0
         else:

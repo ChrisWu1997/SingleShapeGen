@@ -98,17 +98,18 @@ def main():
     parser.add_argument('--stride', type=int, default=None, help='patch stride. By default, half of patch size.')
     parser.add_argument('--patch_num', type=int, default=1000, help='max number of patches sampled from generated shapes.')
     parser.add_argument('-o', '--output', type=str, default=None, help='result save path')
-    parser.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
+    parser.add_argument('-g', '--gpu_ids', type=int, default=0, help="which gpu to use. -1 for CPU.")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    # os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
+    device = torch.device(f"cuda:{args.gpu_ids}" if args.gpu_ids >= 0 else "cpu")
     args.stride = args.patch_size // 2 if args.stride is None else args.stride
 
     random.seed(1234)
 
     # load real
     ref_data = load_data_fromH5(args.ref, smooth=False, only_finest=True)
-    ref_data = torch.from_numpy(ref_data > 0.5).cuda()
+    ref_data = torch.from_numpy(ref_data > 0.5).to(device)
     
     ref_patches = extract_valid_patches_unfold(ref_data, args.patch_size, args.stride)
     ref_patches = ref_patches
@@ -121,7 +122,7 @@ def main():
     for name in tqdm(filenames, desc="LP-IOU/F-score"):
         path = os.path.join(args.src, name)
         gen_data = load_data_fromH5(path, smooth=False, only_finest=True)
-        gen_data = torch.from_numpy(gen_data > 0.5).cuda()
+        gen_data = torch.from_numpy(gen_data > 0.5).to(device)
 
         gen_patches = extract_valid_patches_unfold(gen_data, args.patch_size, args.stride)
         indices = list(range(gen_patches.shape[0]))

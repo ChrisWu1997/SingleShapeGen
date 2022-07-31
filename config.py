@@ -16,10 +16,6 @@ class Config(object):
             print("{0:20}".format(k), v)
             self.__setattr__(k, v)
 
-        # GPU usage
-        if args.gpu_ids is not None:
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
-
         # experiment paths
         self.exp_dir = os.path.join(self.proj_dir, self.tag)
         self.log_dir = os.path.join(self.exp_dir, 'log')
@@ -79,7 +75,7 @@ class Config(object):
         group = parser.add_argument_group('basic')
         group.add_argument('--proj_dir', type=str, default="checkpoints", help="a folder where experiment logs will be saved")
         group.add_argument('--tag', type=str, required=True, help="tag for this experiment run")
-        group.add_argument('-g', '--gpu_ids', type=str, default=0, help="which gpu to use, e.g. 0  0,1,2. CPU not supported.")
+        group.add_argument('-g', '--gpu_ids', type=int, default=0, help="which gpu to use. -1 for CPU.")
 
     def _add_data_config(self, parser):
         """arguments for data"""
