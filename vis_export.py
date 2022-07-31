@@ -45,6 +45,6 @@ if __name__ == "__main__":
                 else:
                     save_dir = os.path.dirname(args.src) + f'_{args.export}'
                 os.makedirs(save_dir, exist_ok=True)
-                name = path.split('/')[-1].split('.')[0]
+                name = os.path.basename(path).split('.')[0]
                 save_path = os.path.join(save_dir, name + f'.{args.export}')
                 mesh.export(save_path)

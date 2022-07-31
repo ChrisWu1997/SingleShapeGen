@@ -330,7 +330,8 @@ class SSGmodelBase(ABC):
             return self.noiseOpt_init
         else:
             if resize_factor[0] != 1.0 or resize_factor[1] != 1.0 or resize_factor[2] != 1.0:
-                init_size = [round(self.real_sizes[i] * resize_factor[i]) for i in range(3)]
+                init_size = self.real_sizes[0][-3:]
+                init_size = [1, 1] + [round(init_size[i] * resize_factor[i]) for i in range(3)]
                 return torch.randn(*init_size, device=self.device)
             return torch.randn_like(self.noiseOpt_init)
     
