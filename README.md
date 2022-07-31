@@ -1,38 +1,59 @@
 # Learning to Generate 3D Shapes from a Single Example
 TBA.
 
-## Get started
-Set up a conda environment with all dependencies:
+## Dependencies
+Install with conda:
 ```bash
 conda env create -f environment.yml
 conda activate ssg
 ```
-or through pip
+or install with pip:
 ```bash
-pip install requirement.txt
+pip install -r requirement.txt
 ```
 
-TBA: A GUI Demo
 
-## Run pretrained models
-We provide pretrained models for all example shapes in the paper: [link TBA]() ([backup]()). Download and extract in `checkpoints` folder.
+## Pretrained models
+We provide pretrained models for all shapes that are used in our paper. Download all (about 1G) at once,
+```bash
+bash download_models.sh
+```
+or download each model individually, e.g.,
+```bash
+bash download_models.sh ssg_Acropolis_res256s8
+```
+[Backup Google Drive link]().
+
+
+## Quick start: a gui demo
+We provide a simple gui demo (based on [Open3D](https://github.com/isl-org/Open3D/blob/master/examples/python/visualization/vis_gui.py)) that allows quick shape generation with a trained model. For example, run
+```bash
+python gui_demo.py checkpoints/ssg_Acropolis_res256s8
+```
+
+TODO: add a record video.
+
+
+## Inference
 
 ### Random generation
 To randomly generate new shapes, run
 ```bash
 python main.py test --tag ssg_Acropolis_res256s8 -g 0 --n_samples 10 --mode rand
 ```
-The generated shapes (`.h5` files) will be saved in `checkpoints/ssg_Acropolis_r256s8/rand_n10_bin_r1x1x1`.
+The generated shapes will be saved in `.h5` format, compatible with the training data.
 
 Specify `--resize` to change the spatial dimensions. For example, `--resize 1.5 1.0 1.0` generates shapes whose size along x-axis are 1.5 times larger than original.
 
-Specify `--upsample` to construct the output shape at a higher resolution. For example, `--upsample 2` results in 2 times higher resolution.
+Specify `--upsample` to construct the output shape at a higher resolution. For example, `--upsample 2` gives in 2 times higher resolution.
+
 
 ### Interpolation and extrapolation
 For interpolation and extrapolation between two randomly generated samples, run
 ```bash
 python main.py test --tag ssg_Acropolis_r256s8 -g 0 --n_samples 5 --mode interp
 ```
+
 
 ### Visualize and export
 To quickly visualize the generated shapes (of `.h5` format), run
@@ -43,7 +64,8 @@ python vis_export.py -s checkpoints/ssg_Acropolis_r256s8/rand_n10_bin_r1x1x1 -f 
 
 Specify `--export obj` to export meshes in `obj` format.
 
-## Data preparation
+
+## Training data preparation
 We list the sources for all example shapes that we used: [data/README.md](data/README.md). Most of them are free and you can download accordingly.
 
 To construct the training data (voxel pyramid) from a mesh, we rely on [binvox](https://www.patrickmin.com/binvox/).
@@ -58,6 +80,7 @@ The processed data will be saved in `.h5` format.
 
 TBA: how to provide preprocessed data?
 
+
 ## Training
 To train on the processed h5 data, run
 ```bash
@@ -65,13 +88,14 @@ python main.py train --tag {your-experiment-tag} -s {path-to-processed-h5-data} 
 ```
 By default, the log and model will be saved in `checkpoints/{your-experiment-tag}`.
 
+
 ## Evaluation
 We provide code for evaluation metrics LP-IoU, LP-F-score, SSFID and Div.
 SSFID relies on a pretrained 3D shape classifier. Please download it from [here](https://drive.google.com/file/d/1HjnDudrXsNY4CYhIGhH4Q0r3-NBnBaiC/view?usp=sharing) and put `Clsshapenet_128.pth` under `evaluation` folder.
 
 To perform evaluation, we first randomly generate 100 shapes, e.g.,
 ```bash
-python test.py --tag ssg_Acropolis_res128s6 -g 0 --n_samples 100 --mode rand
+python main.py test --tag ssg_Acropolis_res128s6 -g 0 --n_samples 100 --mode rand
 ```
 
 Then run the evalution script to compute all metrics, e.g.,
@@ -81,6 +105,11 @@ cd evaluation
 ./eval.sh ../checkpoints/ssg_Acropolis_r128s6/rand_n100_bin_r1x1x1 ../data/Acropolis_r128s6.h5 0
 ```
 See `evaluation` folder for evalution scripts for each individual metric.
+
+
+## SinGAN-3D baseline
+We also provide a baseline, SinGAN-3D, as described in our paper. To use it, simply specify `--G_struct conv3d` when running `main.py`. Pretrained models are also provided (begin with "singan3d").
+
 
 ## Rendering
 We provide code and configurations for rendering figures in our paper.
@@ -92,6 +121,7 @@ cd render
 python render_script.py -s {path-to-generated-shapes-folder} -c {render-config-name} --smooth 3 --cleanup
 ```
 See `render/render_configs.json` for saved rendering configs.
+
 
 ## Acknowledgement
 We develop some part of this repo based on code from [ConSinGAN](https://github.com/tohinz/ConSinGAN), [DECOR-GAN](https://github.com/czq142857/DECOR-GAN) and [BlenderToolbox](https://github.com/HTDerekLiu/BlenderToolbox). We would like to thank their authors.

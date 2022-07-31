@@ -18,3 +18,4 @@ dependencies:
     - pymcubes==0.1.2
     - trimesh==3.12.5
     - pyglet==1.5.26
+    - open3d==0.15.1
