@@ -1,29 +1,3 @@
-# ----------------------------------------------------------------------------
-# -                        Open3D: www.open3d.org                            -
-# ----------------------------------------------------------------------------
-# The MIT License (MIT)
-#
-# Copyright (c) 2018-2021 www.open3d.org
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# IN THE SOFTWARE.
-# ----------------------------------------------------------------------------
-
 import glob
 from tkinter import E
 import numpy as np
@@ -41,6 +15,13 @@ from model import get_model
 from utils.data_utils import get_biggest_connected_compoent
 
 isMacOS = (platform.system() == "Darwin")
+
+if torch.cuda.is_available():
+    GPU_ID = 0
+    print("Using GPU 0")
+else:
+    GPU_ID = -1
+    print("Using CPU")
 
 
 class Settings:
@@ -217,7 +198,7 @@ def _load_ssg_model(ckpt_dir):
         return None
 
     # a simplified config object
-    class SmallConfig:
+    class TinyConfig:
         def __init__(self, config_path) -> None:
             with open(config_path, "r") as fp:
                 save_args = json.load(fp)
@@ -227,9 +208,10 @@ def _load_ssg_model(ckpt_dir):
             self.log_dir = os.path.join(self.exp_dir, 'log')
             self.model_dir = os.path.join(self.exp_dir, 'model')
             self.ckpt = None
+            self.gpu_ids = GPU_ID
     
     config_path = os.path.join(ckpt_dir, "config.json")
-    cfg = SmallConfig(config_path)
+    cfg = TinyConfig(config_path)
     ssg_model = get_model(cfg)
     
     # load from checkpoint
@@ -243,12 +225,6 @@ def _load_ssg_model(ckpt_dir):
 
 
 class AppWindow:
-    MENU_OPEN = 1
-    MENU_EXPORT = 2
-    MENU_QUIT = 3
-    MENU_SHOW_SETTINGS = 11
-    MENU_ABOUT = 21
-
     DEFAULT_IBL = "default"
 
     MATERIAL_NAMES = ["Lit", "Unlit", "Normals", "Depth"]
@@ -259,14 +235,14 @@ class AppWindow:
     def __init__(self, width, height):
         # ssg model related attributes
         self.ssg_model = None
-        self.is_cleanup = False
+        self.mesh = None
 
         self.settings = Settings()
         resource_path = gui.Application.instance.resource_path
         self.settings.new_ibl_name = resource_path + "/" + AppWindow.DEFAULT_IBL
 
         self.window = gui.Application.instance.create_window(
-            "Open3D", width, height)
+            "SingleShapeGen", width, height)
         w = self.window  # to make the code more concise
 
         # 3D widget
@@ -350,6 +326,7 @@ class AppWindow:
         model_ctrls.add_fixed(separation_height)
         model_ctrls.add_child(gui.Label("Generation"))
         
+        # resize slider
         self._resize_x_slider = gui.Slider(gui.Slider.DOUBLE)
         self._resize_x_slider.set_limits(0.5, 2.0)
         self._resize_x_slider.double_value = 1.0
@@ -374,17 +351,20 @@ class AppWindow:
         h.add_child(self._resize_z_slider)
         model_ctrls.add_child(h)
 
+        # cleanup check box
         self._cleanup_box = gui.Checkbox("Clean up")
         self._cleanup_box.set_on_checked(self._on_cleanup_box)
         self._cleanup_box.checked = True
         model_ctrls.add_child(self._cleanup_box)
 
-        self._laplacian_smooth = gui.Slider(gui.Slider.INT)
-        self._laplacian_smooth.set_limits(0, 5)
-        self._laplacian_smooth.set_on_value_changed(self._on_laplacian_smooth)
+        # laplacian smooth slider
+        self._laplacian_slider = gui.Slider(gui.Slider.INT)
+        self._laplacian_slider.set_limits(0, 5)
+        self._laplacian_slider.int_value = 3
+        self._laplacian_slider.set_on_value_changed(self._on_laplacian_slider)
         h = gui.Horiz(0.5 * em)
         h.add_child(gui.Label("Laplacian smooth"))
-        h.add_child(self._laplacian_smooth)
+        h.add_child(self._laplacian_slider)
         model_ctrls.add_child(h)
 
         # generate button
@@ -393,10 +373,15 @@ class AppWindow:
         self._generate_button.vertical_padding_em = 0
         self._generate_button.set_on_clicked(self._on_generate_button)
         
+        # export button
+        self._export_button = gui.Button("Export")
+        self._export_button.horizontal_padding_em = 0.5
+        self._export_button.vertical_padding_em = 0
+        self._export_button.set_on_clicked(self._on_export_button)
+        
         h = gui.Horiz(0.5 * em)  # row 0
         h.add_child(self._generate_button)
-        h.add_stretch()
-        h.add_stretch()
+        h.add_child(self._export_button)
         model_ctrls.add_child(h)
         return model_ctrls
 
@@ -647,11 +632,16 @@ class AppWindow:
 
     def _on_cleanup_box(self, check):
         print("clean up:", check)
+        # TODO: update current geometry
 
-    def _on_laplacian_smooth(self, iterations):
+    def _on_laplacian_slider(self, iterations):
         print("Laplacian smooth iterations:", iterations)
+        # TODO: update current geometry
 
     def _on_generate_button(self):
+        if self.ssg_model is None:
+            return
+
         print("Generating next...")
 
         since = time.time()
@@ -693,10 +683,11 @@ class AppWindow:
         vertices = o3d.utility.Vector3dVector(vertices)
         faces = o3d.utility.Vector3iVector(faces)
         mesh = o3d.geometry.TriangleMesh(vertices, faces)
-        if self._laplacian_smooth.int_value > 0:
-            mesh = mesh.filter_smooth_laplacian(self._laplacian_smooth.int_value)
+        if self._laplacian_slider.int_value > 0:
+            mesh = mesh.filter_smooth_laplacian(self._laplacian_slider.int_value)
         mesh.compute_vertex_normals()
         mesh.paint_uniform_color([0.5, 0.5, 0.5])
+        self.mesh = mesh # for later export
         material = rendering.MaterialRecord()
         material.shader = 'defaultLit'
         end = time.time()
@@ -709,6 +700,27 @@ class AppWindow:
         self._scene.setup_camera(60, bounds, bounds.get_center())
         end = time.time()
         print("scene update time:", end - since)
+
+    def _on_export_button(self):
+        if self.mesh is None:
+            return
+
+        dlg = gui.FileDialog(gui.FileDialog.SAVE, "Choose file to save",
+                             self.window.theme)
+        dlg.set_on_cancel(self._on_file_dialog_cancel)
+        dlg.set_on_done(self._on_export_dialog_done)
+        self.window.show_dialog(dlg)
+
+    def _on_file_dialog_cancel(self):
+        self.window.close_dialog()
+
+    def _on_export_dialog_done(self, filename):
+        self.window.close_dialog()
+        try:
+            o3d.io.write_triangle_mesh(filename, self.mesh, write_vertex_colors=False)
+            print(f"Save mesh to '{filename}'")
+        except Exception as e:
+            print("Save mesh failed.", e)
 
     def _set_mouse_mode_rotate(self):
         self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_CAMERA)
