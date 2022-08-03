@@ -1,20 +1,31 @@
 # Learning to Generate 3D Shapes from a Single Example
-TBA.
 
-## Dependencies
-Install with conda:
+![](teaser.jpg)
+
+Official implementation for the paper:
+> **[Learning to Generate 3D Shapes from a Single Example]()**  
+> [Rundi Wu](https://www.cs.columbia.edu/~rundi/), [Changxi Zheng](http://www.cs.columbia.edu/~cxz/)  
+> Columbia University  
+
+
+## Installation
+Prerequisites:
+- python 3.9+
+- An Nvidia GPU
+
+Install dependencies with conda:
 ```bash
 conda env create -f environment.yml
 conda activate ssg
 ```
-or install with pip:
+or install dependencies with pip:
 ```bash
 pip install -r requirement.txt
 ```
 
 
 ## Pretrained models
-We provide pretrained models for all shapes that are used in our paper. Download all (about 1G) at once,
+We provide pretrained models for all shapes that are used in our paper. Download all of them (about 1G):
 ```bash
 bash download_models.sh
 ```
@@ -31,7 +42,7 @@ We provide a simple gui demo (based on [Open3D](https://github.com/isl-org/Open3
 python gui_demo.py checkpoints/ssg_Acropolis_res256s8
 ```
 
-TODO: add a record video.
+TODO: add a recorded video.
 
 
 ## Inference
@@ -108,7 +119,7 @@ See `evaluation` folder for evalution scripts for each individual metric.
 
 
 ## SinGAN-3D baseline
-We also provide a baseline, SinGAN-3D, as described in our paper. To use it, simply specify `--G_struct conv3d` when running `main.py`. Pretrained models are also provided (begin with "singan3d").
+We also provide a baseline, SinGAN-3D, as described in our paper. To use it, simply specify `--G_struct conv3d` when training the model. Pretrained models are also provided (begin with "singan3d").
 
 
 ## Rendering
@@ -124,7 +135,7 @@ See `render/render_configs.json` for saved rendering configs.
 
 
 ## Acknowledgement
-We develop some part of this repo based on code from [ConSinGAN](https://github.com/tohinz/ConSinGAN), [DECOR-GAN](https://github.com/czq142857/DECOR-GAN) and [BlenderToolbox](https://github.com/HTDerekLiu/BlenderToolbox). We would like to thank their authors.
+We develop some part of this repo based on code from [SinGAN](https://github.com/tamarott/SinGAN), [ConSinGAN](https://github.com/tohinz/ConSinGAN), [DECOR-GAN](https://github.com/czq142857/DECOR-GAN) and [BlenderToolbox](https://github.com/HTDerekLiu/BlenderToolbox). We would like to thank their authors.
 
 ## Citation
 - TBA
