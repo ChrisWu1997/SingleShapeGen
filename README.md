@@ -16,6 +16,7 @@ Prerequisites:
 Install dependencies with pip:
 ```bash
 pip install -r requirement.txt
+# NOTE: check https://pytorch.org/ for pytorch installation command for your CUDA version
 ```
 
 
@@ -37,8 +38,9 @@ We provide a simple gui demo (based on [Open3D](https://github.com/isl-org/Open3
 python gui_demo.py checkpoints/ssg_Acropolis_r256s8
 ```
 
-TODO: add a recorded video.
+https://user-images.githubusercontent.com/32172140/182953932-480316a9-f8c8-4cbd-a7c4-7ce2fe74a11b.mp4
 
+(The above video is recorded on a Ubuntu 20.04 with an NVIDIA 3090 GPU.) 
 
 ## Inference
 
