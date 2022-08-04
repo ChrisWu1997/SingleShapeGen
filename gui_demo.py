@@ -1,5 +1,5 @@
+# based on https://github.com/isl-org/Open3D/blob/master/examples/python/visualization/vis_gui.py
 import glob
-from tkinter import E
 import numpy as np
 import open3d as o3d
 import open3d.visualization.gui as gui
@@ -204,9 +204,9 @@ def _load_ssg_model(ckpt_dir):
                 save_args = json.load(fp)
             for k, v in save_args.items():
                 self.__setattr__(k, v)
-            self.exp_dir = os.path.join(self.proj_dir, self.tag)
-            self.log_dir = os.path.join(self.exp_dir, 'log')
-            self.model_dir = os.path.join(self.exp_dir, 'model')
+            self.exp_dir = ckpt_dir # keep the path absolute path
+            self.log_dir = os.path.join(ckpt_dir, 'log')
+            self.model_dir = os.path.join(ckpt_dir, 'model')
             self.ckpt = None
             self.gpu_ids = GPU_ID
     
@@ -306,19 +306,15 @@ class AppWindow:
         model_ctrls = gui.CollapsableVert("SSG model", 0.25 * em,
                                          gui.Margins(em, 0, 0, 0))
         # checkpoint loading
-        model_ctrls.add_child(gui.Label("Checkpoint folder:"))
-
-        self.ckpt_textbox = gui.TextEdit()
-
-        self._load_button = gui.Button("Load")
+        self._load_button = gui.Button("Load checkpoint folder")
         self._load_button.horizontal_padding_em = 0.5
         self._load_button.vertical_padding_em = 0
-        self._load_button.set_on_clicked(self.load_model)
+        self._load_button.set_on_clicked(self._on_load_button)
+        model_ctrls.add_child(self._load_button)
 
+        self.ckpt_textbox = gui.TextEdit()
         load_button_layout = gui.Horiz()
         load_button_layout.add_child(self.ckpt_textbox)
-        load_button_layout.add_fixed(0.25 * em)
-        load_button_layout.add_child(self._load_button)
 
         model_ctrls.add_child(load_button_layout)
 
@@ -614,18 +610,36 @@ class AppWindow:
         self._settings_panel.frame = gui.Rect(r.get_right() - width, r.y, width,
                                               height)
 
+    def _on_load_button(self):
+        dlg = gui.FileDialog(gui.FileDialog.OPEN_DIR, "Choose file to load",
+                             self.window.theme)
+
+        # A file dialog MUST define on_cancel and on_done functions
+        dlg.set_on_cancel(self._on_file_dialog_cancel)
+        dlg.set_on_done(self._on_load_dialog_done)
+        self.window.show_dialog(dlg)
+
+    def _on_file_dialog_cancel(self):
+        self.window.close_dialog()
+
+    def _on_load_dialog_done(self, filename):
+        self.window.close_dialog()
+        self.load_model(filename)
+
     def load_model(self, ckpt_dir=None):
         if ckpt_dir is None:
             ckpt_dir = self.ckpt_textbox.text_value
         if not os.path.exists(ckpt_dir):
-            self.window.show_message_box("Error", f"Checkpoint folder '{ckpt_dir}' not exists.")
-            print(f"Checkpoint folder '{ckpt_dir}' not exists.")
+            self.window.show_message_box("Error", f"Path '{ckpt_dir}' not exists.")
+            print(f"Path '{ckpt_dir}' not exists.")
             return
         
         try:
             self.ssg_model = _load_ssg_model(ckpt_dir)
             if ckpt_dir is not None:
                 self.ckpt_textbox.text_value = ckpt_dir
+            self.mesh = None
+            self._scene.scene.clear_geometry()
         except Exception as e:
             self.window.show_message_box("Error", "Load checkpoint failed.")
             print(e)
@@ -642,7 +656,7 @@ class AppWindow:
         if self.ssg_model is None:
             return
 
-        print("Generating next...")
+        print("########## Generating next ##########")
 
         since = time.time()
         with torch.no_grad():
@@ -710,9 +724,6 @@ class AppWindow:
         dlg.set_on_cancel(self._on_file_dialog_cancel)
         dlg.set_on_done(self._on_export_dialog_done)
         self.window.show_dialog(dlg)
-
-    def _on_file_dialog_cancel(self):
-        self.window.close_dialog()
 
     def _on_export_dialog_done(self, filename):
         self.window.close_dialog()

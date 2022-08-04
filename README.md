@@ -13,12 +13,7 @@ Prerequisites:
 - python 3.9+
 - An Nvidia GPU
 
-Install dependencies with conda:
-```bash
-conda env create -f environment.yml
-conda activate ssg
-```
-or install dependencies with pip:
+Install dependencies with pip:
 ```bash
 pip install -r requirement.txt
 ```
@@ -31,7 +26,7 @@ bash download_models.sh
 ```
 or download each model individually, e.g.,
 ```bash
-bash download_models.sh ssg_Acropolis_res256s8
+bash download_models.sh ssg_Acropolis_r256s8
 ```
 [Backup Google Drive link]().
 
@@ -39,7 +34,7 @@ bash download_models.sh ssg_Acropolis_res256s8
 ## Quick start: a gui demo
 We provide a simple gui demo (based on [Open3D](https://github.com/isl-org/Open3D/blob/master/examples/python/visualization/vis_gui.py)) that allows quick shape generation with a trained model. For example, run
 ```bash
-python gui_demo.py checkpoints/ssg_Acropolis_res256s8
+python gui_demo.py checkpoints/ssg_Acropolis_r256s8
 ```
 
 TODO: add a recorded video.
@@ -50,7 +45,7 @@ TODO: add a recorded video.
 ### Random generation
 To randomly generate new shapes, run
 ```bash
-python main.py test --tag ssg_Acropolis_res256s8 -g 0 --n_samples 10 --mode rand
+python main.py test --tag ssg_Acropolis_r256s8 -g 0 --n_samples 10 --mode rand
 ```
 The generated shapes will be saved in `.h5` format, compatible with the training data.
 
@@ -89,7 +84,7 @@ python voxelize.py -s {path-to-your-mesh-file} --res 128 --n_scales 6 -o {save-p
 ```
 The processed data will be saved in `.h5` format.
 
-TBA: how to provide preprocessed data?
+TBA: release preprocessed data?
 
 
 ## Training
@@ -106,7 +101,7 @@ SSFID relies on a pretrained 3D shape classifier. Please download it from [here]
 
 To perform evaluation, we first randomly generate 100 shapes, e.g.,
 ```bash
-python main.py test --tag ssg_Acropolis_res128s6 -g 0 --n_samples 100 --mode rand
+python main.py test --tag ssg_Acropolis_r128s6 -g 0 --n_samples 100 --mode rand
 ```
 
 Then run the evalution script to compute all metrics, e.g.,
