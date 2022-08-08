@@ -1,0 +1,21 @@
+name: ssg
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - pip=22.1.2
+  - python=3.9.12
+  - pytorch>=1.11.0
+  - pip:
+    - h5py==3.6.0
+    - numpy==1.22.3
+    - pillow==9.0.1
+    - pymcubes==0.1.2
+    - trimesh==3.12.5
+    - pyglet==1.5.26
+    - open3d==0.15.2
+    - scikit-image==0.19.2
+    - scipy==1.7.3
+    - tensorboardx==2.5
+    - tqdm==4.64.0
+    - protobuf==3.20.0
