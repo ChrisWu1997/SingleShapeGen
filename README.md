@@ -6,6 +6,7 @@ Official implementation for the paper:
 > **[Learning to Generate 3D Shapes from a Single Example](http://www.cs.columbia.edu/cg/SingleShapeGen/)**  
 > [Rundi Wu](https://www.cs.columbia.edu/~rundi/), [Changxi Zheng](http://www.cs.columbia.edu/~cxz/)  
 > Columbia University  
+> SIGGRAPH Asia 2022 (Journal Track)
 
 
 ## Installation
@@ -37,8 +38,8 @@ bash download_models.sh ssg_Acropolis_r256s8
 [Backup Google Drive link](https://drive.google.com/drive/folders/1kgiKxdsRnFryHQKMX5NbKja155NZeiMD?usp=sharing).
 
 
-## Quick start: a gui demo
-We provide a simple gui demo (based on [Open3D](https://github.com/isl-org/Open3D/blob/master/examples/python/visualization/vis_gui.py)) that allows quick shape generation with a trained model. For example, run
+## Quick start: a GUI demo
+We provide a simple GUI demo (based on [Open3D](https://github.com/isl-org/Open3D/blob/master/examples/python/visualization/vis_gui.py)) that allows quick shape generation with a trained model. For example, run
 ```bash
 python gui_demo.py checkpoints/ssg_Acropolis_r256s8
 ```
@@ -140,12 +141,15 @@ We develop some part of this repo based on code from [SinGAN](https://github.com
 
 ## Citation
 ```
-@misc{wu2022learning,
-      title={Learning to Generate 3D Shapes from a Single Example}, 
-      author={Rundi Wu and Changxi Zheng},
-      year={2022},
-      eprint={2208.02946},
-      archivePrefix={arXiv},
-      primaryClass={cs.GR}
+@article{wu2022learning,
+    title={Learning to Generate 3D Shapes from a Single Example},
+    author={Wu, Rundi and Zheng, Changxi},
+    journal={ACM Transactions on Graphics (TOG)},
+    volume={41},
+    number={6},
+    articleno={224},
+    numpages={19},
+    year={2022},
+    publisher={ACM New York, NY, USA}
 }
 ```
