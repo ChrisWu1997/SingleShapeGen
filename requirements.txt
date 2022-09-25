@@ -10,4 +10,4 @@ tqdm==4.64.0
 trimesh==3.12.5
 open3d==0.15.2
 tensorboardX==2.5
-protobuf==3.20.0
+protobuf==3.20.2
