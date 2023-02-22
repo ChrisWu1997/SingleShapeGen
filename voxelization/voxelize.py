@@ -49,7 +49,7 @@ def multiscale_voxelization_binvox(path: str, resolution_list: list, min_size: i
     """
     # normalize to -1 ~ 1 and save, otherwise binvox might give incorrect result
     mesh = load_mesh(path, normalize=True)
-    norm_path = os.path.splitext(path) + '_norm.obj'
+    norm_path = os.path.splitext(path)[0] + '_norm.obj'
     mesh.export(norm_path)
     mesh = None
 
